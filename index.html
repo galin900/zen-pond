@@ -189,7 +189,7 @@ body {
   box-shadow: 0 6px 20px rgba(4, 30, 30, 0.18);
   pointer-events: auto;
 }
-.menu[hidden] { display: none; }
+.menu[hidden], .controls .row[hidden] { display: none; }
 .controls .menu button { background: var(--glass-strong); }
 .mode-label {
   font-weight: 600;
@@ -263,7 +263,7 @@ body {
     <button data-mode="rose" type="button">Розовый куст</button>
     <button data-mode="feeder" type="button">Кормушку для птиц</button>
   </div>
-  <div class="row">
+  <div class="row" id="main-row" hidden>
     <button class="primary" id="add" type="button" aria-expanded="false" aria-controls="add-menu">Добавить ▾</button>
     <button id="decor" type="button" aria-expanded="false" aria-controls="decor-menu">Украсить ▾</button>
     <button id="remove" type="button">Удалить</button>
@@ -272,6 +272,7 @@ body {
     <button id="pause" type="button" aria-label="Пауза">⏸</button>
     <button id="share" type="button">Поделиться</button>
   </div>
+  <button id="menu-toggle" type="button" aria-expanded="false" aria-controls="main-row">☰ Меню</button>
 </div>
 
 <div class="controls" id="mode-controls" hidden>
@@ -293,6 +294,8 @@ body {
   var decorMenu = document.getElementById("decor-menu");
   var addAxoBtn = document.getElementById("add-axo");
   var removeBtn = document.getElementById("remove");
+  var mainRow = document.getElementById("main-row");
+  var menuToggle = document.getElementById("menu-toggle");
   var modeControls = document.getElementById("mode-controls");
   var modeLabel = document.getElementById("mode-label");
   var modeBtns = Array.prototype.slice.call(document.querySelectorAll("[data-mode]"));
@@ -2139,6 +2142,16 @@ body {
     else if (inWater(x, y)) dropFood(x, y);
     if (paused) draw();
   });
+  var MENU_KEY = "zen-pond-menu-open";
+  function setMenuOpen(open, remember) {
+    if (!open) closeMenus();
+    mainRow.hidden = !open;
+    menuToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    menuToggle.textContent = open ? "✕ Свернуть" : "☰ Меню";
+    if (remember) { try { localStorage.setItem(MENU_KEY, open ? "1" : "0"); } catch (e) { /* ничего */ } }
+  }
+  menuToggle.addEventListener("click", function () { setMenuOpen(mainRow.hidden, true); });
+  try { setMenuOpen(localStorage.getItem(MENU_KEY) === "1", false); } catch (e) { setMenuOpen(false, false); }
   addBtn.addEventListener("click", function () { toggleMenu(addMenu, addBtn); });
   decorBtn.addEventListener("click", function () { toggleMenu(decorMenu, decorBtn); });
   removeBtn.addEventListener("click", function () { enterMode("remove", removeBtn); });
