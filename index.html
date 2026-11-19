@@ -1158,6 +1158,11 @@ body {
   ];
 
   function drawBackground() {
+    ensureWaterCaches();
+    ctx.drawImage(bgCache, 0, 0, W, H);
+    drawGlints();
+  }
+  function drawBackgroundStatic() {
     var g = ctx.createRadialGradient(W * 0.3, H * 0.2, 0, W * 0.5, H * 0.5, Math.max(W, H) * 0.85);
     g.addColorStop(0, colors["water-shallow"]);
     g.addColorStop(1, colors["water-deep"]);
@@ -1172,8 +1177,10 @@ body {
       ctx.ellipse(p.x * W, p.y * H, p.r, p.r * p.sq, p.rot, 0, TAU);
       ctx.fill();
     }
-
-    for (i = 0; i < glints.length; i++) {
+    ctx.globalAlpha = 1;
+  }
+  function drawGlints() {
+    for (var i = 0; i < glints.length; i++) {
       var c = glints[i];
       var x = (c.x + Math.sin(time * 0.05 * c.sx + c.ph) * 0.12) * W;
       var y = (c.y + Math.cos(time * 0.05 * c.sy + c.ph) * 0.12) * H;
@@ -1241,6 +1248,12 @@ body {
       ctx.arc(0, 0, r, 0.22, TAU - 0.22);
       ctx.closePath();
       ctx.fill();
+      ctx.save();
+      ctx.rotate(-rot);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
+      ctx.lineWidth = Math.max(1.5, r * 0.06);
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.93, Math.PI * 1.05, Math.PI * 1.55); ctx.stroke();
+      ctx.restore();
       ctx.strokeStyle = colors["pad-vein"];
       ctx.lineWidth = Math.max(1, r * 0.022);
       ctx.lineCap = "round";
@@ -1867,11 +1880,170 @@ body {
     drawDuckShape(d.x, d.y, d.a, ds, d.female, flying, d.flap);
   }
 
+  /* ---------- объём воды: глубина, блики на дне, искры на поверхности ---------- */
+  // тайл «каустики» — светлая сетка, как солнечные зайчики на дне
+  var CAUSTIC_SIZE = 192;
+  var causticTile = (function () {
+    var S = CAUSTIC_SIZE, c = document.createElement("canvas");
+    c.width = c.height = S;
+    var g = c.getContext("2d"), img = g.createImageData(S, S), d = img.data;
+    var rnd = seeded(2024), pts = [];
+    for (var i = 0; i < 16; i++) pts.push([rnd() * S, rnd() * S]);
+    for (var y = 0; y < S; y++) {
+      for (var x = 0; x < S; x++) {
+        var f1 = 1e9, f2 = 1e9;
+        for (var k = 0; k < pts.length; k++) {
+          var dx = Math.abs(x - pts[k][0]), dy = Math.abs(y - pts[k][1]);
+          if (dx > S / 2) dx = S - dx;
+          if (dy > S / 2) dy = S - dy;
+          var dd = dx * dx + dy * dy;
+          if (dd < f1) { f2 = f1; f1 = dd; } else if (dd < f2) f2 = dd;
+        }
+        var edge = Math.sqrt(f2) - Math.sqrt(f1);
+        var v = Math.pow(clamp(1 - edge / 9, 0, 1), 2.4);
+        var o = (y * S + x) * 4;
+        d[o] = 255; d[o + 1] = 255; d[o + 2] = 245; d[o + 3] = Math.round(v * 255);
+      }
+    }
+    g.putImageData(img, 0, 0);
+    return c;
+  })();
+  var causticPattern = null;
+
+  var sparkles = [];
+  (function () {
+    var rnd = seeded(77);
+    for (var i = 0; i < 46; i++) sparkles.push({ x: rnd(), y: rnd(), ph: rnd() * TAU, sp: 0.8 + rnd() * 1.6, len: 5 + rnd() * 10, dx: (rnd() - 0.5) * 0.01 });
+  })();
+
+  function shoreLine(left, width, style, alpha) {
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = style;
+    ctx.lineWidth = width;
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    for (var y = -20; y <= H + 20; y += 8) {
+      var x = left ? leftW(y) : W - rightW(y);
+      if (y === -20) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  function drawDepth() {
+    var s = shore();
+    // светлое мелководье у берегов: песок просвечивает сквозь воду
+    for (var side = 0; side < 2; side++) {
+      for (var j = 1; j <= 6; j++) {
+        shoreLine(side === 0, s * 3.6 * j / 6, colors["water-shallow"], 0.075);
+        shoreLine(side === 0, s * 1.8 * j / 6, colors.sand, 0.035);
+      }
+    }
+    // тёмная глубина посередине, множеством мягких слоёв
+    var widths = [];
+    for (var w = 0.72; w > 0.08; w -= 0.06) widths.push(w);
+    for (var i = 0; i < widths.length; i++) {
+      ctx.globalAlpha = 0.026;
+      ctx.strokeStyle = colors.pebble;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      for (var y = -40; y <= H + 40; y += 10) {
+        var x = waterMidX(clamp(y, 0, H));
+        if (y === -40) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      var avg = W - leftW(H / 2) - rightW(H / 2);
+      ctx.lineWidth = Math.max(20, avg * widths[i]);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  var bgCache = null, surfCache = null, cacheKey = "";
+  var causticCanvas = document.createElement("canvas"), cctx = causticCanvas.getContext("2d");
+  var CAUSTIC_DOWN = 3;
+  function makeLayer() {
+    var c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(W * DPR)); c.height = Math.max(1, Math.round(H * DPR));
+    var g = c.getContext("2d"); g.setTransform(DPR, 0, 0, DPR, 0, 0);
+    return { c: c, g: g };
+  }
+  function ensureWaterCaches() {
+    var key = W + "x" + H + "@" + DPR + colors["water-deep"] + colors["water-shallow"] + colors.sand;
+    if (key === cacheKey && bgCache) return;
+    cacheKey = key;
+    var saved = ctx;
+    var bg = makeLayer(); ctx = bg.g; drawBackgroundStatic(); drawDepth(); bgCache = bg.c;
+    var sf = makeLayer(); ctx = sf.g;
+    ctx.globalAlpha = 0.1; ctx.fillStyle = colors["water-deep"]; ctx.fillRect(0, 0, W, H);
+    var gr = ctx.createLinearGradient(0, 0, W * 0.8, H);
+    gr.addColorStop(0, "rgba(255, 255, 255, 0.22)");
+    gr.addColorStop(0.35, "rgba(255, 255, 255, 0)");
+    gr.addColorStop(0.7, "rgba(255, 255, 255, 0)");
+    gr.addColorStop(1, "rgba(255, 255, 255, 0.1)");
+    ctx.globalAlpha = 1; ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
+    surfCache = sf.c;
+    ctx = saved;
+    causticCanvas.width = Math.ceil(W / CAUSTIC_DOWN); causticCanvas.height = Math.ceil(H / CAUSTIC_DOWN);
+    causticPattern = cctx.createPattern(causticTile, "repeat");
+  }
+
+  function drawCaustics() {
+    var light = (1 - 0.85 * nightLevel);
+    if (light < 0.05) return;
+    var cw = causticCanvas.width, ch = causticCanvas.height;
+    cctx.clearRect(0, 0, cw, ch);
+    var layers = [
+      { k: 1.6, vx: 9, vy: 5, a: 0.17 },
+      { k: 2.3, vx: -6, vy: 8, a: 0.12 }
+    ];
+    for (var i = 0; i < layers.length; i++) {
+      var L = layers[i], span = CAUSTIC_SIZE * L.k;
+      var ox = ((time * L.vx) % span + span) % span, oy = ((time * L.vy) % span + span) % span;
+      // лёгкое «дыхание», чтобы сетка переливалась
+      var wob = 1 + Math.sin(time * 0.6 + i * 2) * 0.03, k = L.k * wob / CAUSTIC_DOWN;
+      cctx.setTransform(k, 0, 0, k, (ox - span) / CAUSTIC_DOWN, (oy - span) / CAUSTIC_DOWN);
+      cctx.globalAlpha = L.a;
+      cctx.fillStyle = causticPattern;
+      cctx.fillRect(0, 0, (cw + span * 2 / CAUSTIC_DOWN) / k, (ch + span * 2 / CAUSTIC_DOWN) / k);
+    }
+    cctx.setTransform(1, 0, 0, 1, 0, 0);
+    cctx.globalAlpha = 1;
+    ctx.globalAlpha = light;
+    ctx.drawImage(causticCanvas, 0, 0, W, H);
+    ctx.globalAlpha = 1;
+  }
+
+  // поверхность: жители видны сквозь толщу воды, по глади бегут блики
+  function drawSurface() {
+    ctx.globalAlpha = 1 - 0.5 * nightLevel;
+    ctx.drawImage(surfCache, 0, 0, W, H);
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    var power = 1 - 0.75 * nightLevel;
+    for (var i = 0; i < sparkles.length; i++) {
+      var sp = sparkles[i];
+      var tw = Math.sin(time * sp.sp + sp.ph);
+      if (tw <= 0.55) continue;
+      var x = ((sp.x + time * sp.dx) % 1 + 1) % 1 * W, y = sp.y * H;
+      if (!inWater(x, y, 6)) continue;
+      var k = Math.pow((tw - 0.55) / 0.45, 2) * power;
+      ctx.globalAlpha = 0.75 * k;
+      ctx.fillStyle = "#FFFFFF";
+      ctx.beginPath();
+      ctx.ellipse(x, y, sp.len * (0.6 + 0.4 * k), 1.2 + k, -0.35, 0, TAU);
+      ctx.fill();
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
   function draw() {
     drawBackground();
+    drawCaustics();
     drawFood(false);
     for (var i = 0; i < axos.length; i++) drawAxo(axos[i]);
     for (i = 0; i < fishes.length; i++) drawFish(fishes[i]);
+    drawSurface();
     drawRipples();
     drawPads();
     drawFood(true);
