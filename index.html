@@ -128,6 +128,32 @@ body {
   letter-spacing: -0.02em;
   margin: 0 0 0.6rem;
 }
+.guest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  pointer-events: auto;
+}
+.guest[hidden] { display: none; }
+.guest span { font-weight: 600; font-size: 0.875rem; }
+.guest button {
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  min-height: 2.25rem;
+  background: var(--panel);
+  color: var(--panel-ink);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+.guest button.primary { background: var(--accent); color: var(--accent-ink); }
+.guest button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .intro p {
   margin: 0;
   color: var(--ink-soft);
@@ -218,6 +244,11 @@ body {
 <header class="intro">
   <h1>Дзен пруд</h1>
   <p><span class="count" id="count" aria-live="polite"></span> <span id="hint" aria-live="polite">Нажмите на воду или кувшинку, чтобы бросить корм.</span></p>
+  <div class="guest" id="guest" hidden>
+    <span>Вы в гостях: здесь ничего не сохранится.</span>
+    <button class="primary" id="adopt" type="button">Забрать пруд себе</button>
+    <button id="go-home" type="button">Мой пруд</button>
+  </div>
 </header>
 
 <div class="controls" id="main-controls">
@@ -230,6 +261,7 @@ body {
   <div class="menu" id="decor-menu" role="group" aria-label="Чем украсить" hidden>
     <button data-mode="pad" type="button">Кувшинку</button>
     <button data-mode="rose" type="button">Розовый куст</button>
+    <button data-mode="feeder" type="button">Кормушку для птиц</button>
   </div>
   <div class="row">
     <button class="primary" id="add" type="button" aria-expanded="false" aria-controls="add-menu">Добавить ▾</button>
@@ -238,6 +270,7 @@ body {
     <button id="feed" type="button">Бросить корм</button>
     <button id="sky" type="button" aria-label="Время суток: по часам">🌗 По часам</button>
     <button id="pause" type="button" aria-label="Пауза">⏸</button>
+    <button id="share" type="button">Поделиться</button>
   </div>
 </div>
 
@@ -274,6 +307,13 @@ body {
 
   var MAX_PADS = 16;
   var MAX_ROSES = 40;
+  var MAX_FEEDERS = 3;
+  var MAX_BIRDS = 6;
+  var BIRD_TYPES = [
+    { hello: "Прилетел воробей!", back: "#8E6E4C", head: "#6F5236", wing: "#5E4530", side: "#D9C3A0", cheek: null, beak: "#4A3A2A" },
+    { hello: "Прилетела синица!", back: "#8AA43F", head: "#1F1F24", wing: "#5D7A8C", side: "#F2D34A", cheek: "#FFFFFF", beak: "#2A2A2A" },
+    { hello: "Прилетел снегирь!", back: "#7F828B", head: "#1F1F24", wing: "#2B2D33", side: "#E2553E", cheek: null, beak: "#2A2A2A" }
+  ];
   var MAX_SNAILS_PER_PAD = 2;
   var SNAIL_SHELLS = [
     { shell: "#B5733F", line: "#7A4520" },
@@ -370,6 +410,11 @@ body {
   var jumps = [];
   var pads = defaultPads();
   var roses = [];
+  var guest = false;
+  var feeders = [];
+  var birds = [];
+  var ducks = null;              // семейство уток, которое сейчас в гостях
+  var birdTimer = 4, duckTimer = 20;
 
   var axos = [];
   var fishes = [];
@@ -1413,6 +1458,316 @@ body {
     }
   }
 
+  /* ---------- кормушки и птицы ---------- */
+  function feederSize() { return clamp(shore() * 0.85, 32, 54); }
+  function birdSize() { return clamp(shore() * 0.46, 17, 26); }
+  function duckSize() { return clamp(Math.min(W, H) * 0.095, 32, 48); }
+
+  function drawFeeder(fd) {
+    var s = feederSize(), x = fd.x * W, y = fd.y * H, rnd = seeded(fd.seed || 7);
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = colors.shade;
+    rrect(x - s * 0.55 + s * 0.12, y - s * 0.48 + s * 0.16, s * 1.1, s * 0.96, s * 0.08);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    // поднос с зёрнами
+    ctx.fillStyle = "#C9965A";
+    rrect(x - s * 0.6, y - s * 0.52, s * 1.2, s * 1.04, s * 0.08);
+    ctx.fill();
+    ctx.strokeStyle = "#8F6435"; ctx.lineWidth = Math.max(1, s * 0.05); ctx.stroke();
+    for (var i = 0; i < 26; i++) {
+      var a = rnd() * TAU, ex = Math.cos(a), ey = Math.sin(a);
+      var k = 1 / Math.max(Math.abs(ex) / 0.52, Math.abs(ey) / 0.44);
+      ctx.fillStyle = rnd() < 0.5 ? "#E8D9A0" : "#6B4A2A";
+      ctx.beginPath(); ctx.arc(x + ex * k * s, y + ey * k * s, s * 0.035, 0, TAU); ctx.fill();
+    }
+    // двускатная крыша
+    ctx.fillStyle = "#B5533C";
+    ctx.fillRect(x - s * 0.46, y - s * 0.38, s * 0.46, s * 0.76);
+    ctx.fillStyle = "#94402E";
+    ctx.fillRect(x, y - s * 0.38, s * 0.46, s * 0.76);
+    ctx.strokeStyle = "#6E2E22"; ctx.lineWidth = Math.max(1, s * 0.05);
+    ctx.beginPath(); ctx.moveTo(x, y - s * 0.38); ctx.lineTo(x, y + s * 0.38); ctx.stroke();
+  }
+
+  function offscreenPoint() {
+    var side = Math.floor(rand(0, 4));
+    return {
+      x: side === 0 ? -50 : side === 1 ? W + 50 : rand(0, W),
+      y: side === 2 ? -50 : side === 3 ? H + 50 : rand(0, H)
+    };
+  }
+  function perchPoint(fd) {
+    var s = feederSize(), a = rand(0, TAU), ex = Math.cos(a), ey = Math.sin(a);
+    var k = 1 / Math.max(Math.abs(ex) / 0.58, Math.abs(ey) / 0.5);
+    return { x: fd.x * W + ex * k * s, y: fd.y * H + ey * k * s };
+  }
+  function spawnBird() {
+    if (!feeders.length || birds.length >= MAX_BIRDS) return;
+    var fd = feeders[Math.floor(rand(0, feeders.length))];
+    var st = offscreenPoint(), pp = perchPoint(fd);
+    var ti = Math.floor(rand(0, BIRD_TYPES.length));
+    birds.push({ type: BIRD_TYPES[ti], fd: fd, x: st.x, y: st.y, tx: pp.x, ty: pp.y, a: Math.atan2(pp.y - st.y, pp.x - st.x), state: "in", flap: rand(0, TAU), stay: rand(7, 15), peck: rand(0, 2), hop: rand(1, 3) });
+    if (!decorMode) flash(BIRD_TYPES[ti].hello);
+  }
+  function birdLeave(b) {
+    var o = offscreenPoint();
+    b.state = "out"; b.tx = o.x; b.ty = o.y;
+  }
+  function updateBirds(dt) {
+    if (feeders.length && nightLevel < 0.5) {
+      birdTimer -= dt;
+      if (birdTimer <= 0) { birdTimer = rand(6, 16); spawnBird(); }
+    }
+    for (var i = birds.length - 1; i >= 0; i--) {
+      var b = birds[i];
+      if (b.state !== "out" && (feeders.indexOf(b.fd) < 0 || nightLevel > 0.6)) birdLeave(b);
+      if (b.state === "in" || b.state === "out") {
+        var dx = b.tx - b.x, dy = b.ty - b.y, d = Math.hypot(dx, dy), v = 230 * dt;
+        b.a = Math.atan2(dy, dx);
+        b.flap += dt * 22;
+        if (d <= v) {
+          b.x = b.tx; b.y = b.ty;
+          if (b.state === "out") { birds.splice(i, 1); continue; }
+          b.state = "perch";
+          b.a = Math.atan2(b.fd.y * H - b.y, b.fd.x * W - b.x) + rand(-0.6, 0.6);
+        } else {
+          b.x += dx / d * v; b.y += dy / d * v;
+        }
+      } else {
+        b.stay -= dt; b.peck += dt; b.hop -= dt;
+        if (b.hop <= 0) {
+          b.hop = rand(1.5, 4);
+          var np = perchPoint(b.fd);
+          b.x += (np.x - b.x) * 0.3; b.y += (np.y - b.y) * 0.3;
+          b.a = Math.atan2(b.fd.y * H - b.y, b.fd.x * W - b.x) + rand(-0.8, 0.8);
+        }
+        if (b.stay <= 0) birdLeave(b);
+      }
+    }
+  }
+  function drawBird(b) {
+    var sz = birdSize(), c = b.type, flying = b.state !== "perch";
+    var lift = flying ? 1.15 : 1;
+    // тень (в полёте — дальше и бледнее)
+    ctx.save();
+    ctx.translate(b.x + (flying ? sz * 0.9 : sz * 0.12), b.y + (flying ? sz * 1.3 : sz * 0.18));
+    ctx.rotate(b.a);
+    ctx.globalAlpha = flying ? 0.12 : 0.2;
+    ctx.fillStyle = colors.shade;
+    ctx.beginPath(); ctx.ellipse(0, 0, sz * 0.55, flying ? sz * 0.9 : sz * 0.3, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.rotate(b.a);
+    ctx.scale(lift, lift);
+    // хвост
+    ctx.fillStyle = c.wing;
+    ctx.beginPath();
+    ctx.moveTo(-sz * 0.3, -sz * 0.1); ctx.lineTo(-sz * 0.75, -sz * 0.16); ctx.lineTo(-sz * 0.75, sz * 0.16); ctx.lineTo(-sz * 0.3, sz * 0.1);
+    ctx.closePath(); ctx.fill();
+    var side;
+    if (flying) {
+      var span = sz * (0.55 + 0.45 * Math.abs(Math.sin(b.flap)));
+      for (side = -1; side <= 1; side += 2) {
+        ctx.fillStyle = c.wing;
+        ctx.beginPath(); ctx.ellipse(-sz * 0.02, side * span * 0.55, sz * 0.22, span * 0.55, side * 0.25, 0, TAU); ctx.fill();
+      }
+    }
+    // бока и спинка
+    ctx.fillStyle = c.side;
+    ctx.beginPath(); ctx.ellipse(0, 0, sz * 0.46, sz * 0.31, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = c.back;
+    ctx.beginPath(); ctx.ellipse(-sz * 0.02, 0, sz * 0.42, sz * 0.24, 0, 0, TAU); ctx.fill();
+    if (!flying) {
+      ctx.fillStyle = c.wing;
+      for (side = -1; side <= 1; side += 2) {
+        ctx.beginPath(); ctx.ellipse(-sz * 0.08, side * sz * 0.12, sz * 0.26, sz * 0.09, side * 0.12, 0, TAU); ctx.fill();
+      }
+    }
+    // голова, клюёт зёрнышки
+    var peck = flying ? 0 : Math.max(0, Math.sin(b.peck * 9)) * sz * 0.12;
+    var hx = sz * 0.4 + peck;
+    ctx.fillStyle = c.head;
+    ctx.beginPath(); ctx.arc(hx, 0, sz * 0.2, 0, TAU); ctx.fill();
+    if (c.cheek) {
+      ctx.fillStyle = c.cheek;
+      for (side = -1; side <= 1; side += 2) {
+        ctx.beginPath(); ctx.ellipse(hx - sz * 0.02, side * sz * 0.12, sz * 0.08, sz * 0.05, 0, 0, TAU); ctx.fill();
+      }
+    }
+    ctx.fillStyle = c.beak;
+    ctx.beginPath(); ctx.moveTo(hx + sz * 0.17, -sz * 0.05); ctx.lineTo(hx + sz * 0.32, 0); ctx.lineTo(hx + sz * 0.17, sz * 0.05); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  /* ---------- утки ---------- */
+  function waterMidX(y) { return (leftW(y) + W - rightW(y)) / 2; }
+  function spawnDucks() {
+    if (ducks || !feeders.length) return;
+    var family = Math.random() < 0.5;
+    var d = { x: 0, y: 0, a: 0, speed: 0, flap: 0, target: randomTarget(), timer: rand(3, 6), wake: 0 };
+    var kids = [];
+    if (family) {
+      // мама-утка с утятами приплывает сверху или снизу по воде
+      var top = Math.random() < 0.5, y0 = top ? -50 : H + 50;
+      d.x = waterMidX(top ? 0 : H); d.y = y0; d.a = top ? Math.PI / 2 : -Math.PI / 2;
+      d.state = "swim"; d.female = true;
+      for (var i = 0, n = 2 + Math.floor(rand(0, 4)); i < n; i++) kids.push({ x: d.x, y: y0 + (top ? -1 : 1) * (i + 1) * 20, a: d.a });
+      if (!decorMode) flash("Приплыла утка с утятами!");
+    } else {
+      var st = offscreenPoint(), land = randomTarget();
+      d.x = st.x; d.y = st.y; d.state = "fly-in"; d.tx = land.x; d.ty = land.y;
+      d.female = Math.random() < 0.4;
+      d.a = Math.atan2(land.y - st.y, land.x - st.x);
+      if (!decorMode) flash(d.female ? "Прилетела утка!" : "Прилетел селезень!");
+    }
+    ducks = { duck: d, kids: kids, life: rand(28, 45), family: family };
+  }
+  function ducksLeave() {
+    var d = ducks.duck;
+    if (ducks.family) {
+      var top = d.y < H / 2;
+      d.state = "swim-out"; d.target = { x: waterMidX(top ? 0 : H), y: top ? -80 : H + 80 };
+    } else {
+      var o = offscreenPoint();
+      d.state = "fly-out"; d.tx = o.x; d.ty = o.y;
+      ripples.push({ x: d.x, y: d.y, t: 0, max: 30 });
+    }
+  }
+  function updateDucks(dt) {
+    if (!ducks) {
+      if (feeders.length && nightLevel < 0.5) {
+        duckTimer -= dt;
+        if (duckTimer <= 0) { duckTimer = rand(35, 70); spawnDucks(); }
+      }
+      return;
+    }
+    var d = ducks.duck, ds = duckSize();
+    ducks.life -= dt;
+    if ((ducks.life <= 0 || nightLevel > 0.6 || !feeders.length) && d.state === "swim") ducksLeave();
+
+    if (d.state === "fly-in" || d.state === "fly-out") {
+      var dx = d.tx - d.x, dy = d.ty - d.y, dist = Math.hypot(dx, dy), v = 200 * dt;
+      d.a = Math.atan2(dy, dx); d.flap += dt * 16;
+      if (dist <= v) {
+        if (d.state === "fly-out") { ducks = null; return; }
+        d.x = d.tx; d.y = d.ty; d.state = "swim"; d.speed = 0;
+        ripples.push({ x: d.x, y: d.y, t: 0, max: 50 });
+      } else { d.x += dx / dist * v; d.y += dy / dist * v; }
+    } else {
+      // плывёт: к корму, к цели или прочь из пруда
+      var tgt = d.target, hungry = false;
+      if (d.state === "swim") {
+        var near = nearestWaterFood(d.x, d.y);
+        if (near && near.dist < Math.min(W, H) * 0.6) {
+          tgt = near.food; hungry = true;
+          if (near.dist < ds * 0.45) { eatFood(near.food); ripples.push({ x: near.food.x, y: near.food.y, t: 0, max: 18 }); }
+        } else {
+          d.timer -= dt;
+          if (Math.hypot(tgt.x - d.x, tgt.y - d.y) < ds || d.timer <= 0) { d.target = tgt = randomTarget(); d.timer = rand(4, 9); }
+        }
+      }
+      var diff = angDiff(d.a, Math.atan2(tgt.y - d.y, tgt.x - d.x));
+      d.a += clamp(diff, -1.6 * dt, 1.6 * dt);
+      var goal = ds * (hungry ? 1.6 : 0.9) * Math.max(0.35, Math.cos(diff / 2));
+      d.speed += (goal - d.speed) * Math.min(1, dt * 1.5);
+      d.x += Math.cos(d.a) * d.speed * dt; d.y += Math.sin(d.a) * d.speed * dt;
+      d.wake -= dt;
+      if (d.wake <= 0 && d.speed > ds * 0.3) { d.wake = 0.7; ripples.push({ x: d.x - Math.cos(d.a) * ds * 0.4, y: d.y - Math.sin(d.a) * ds * 0.4, t: 0, max: ds * 0.6 }); }
+      if (d.state === "swim-out" && (d.y < -60 || d.y > H + 60)) { ducks = null; return; }
+    }
+    // утята плывут цепочкой за мамой
+    var lead = d, gap = ds * 0.75;
+    for (var i = 0; i < ducks.kids.length; i++) {
+      var k = ducks.kids[i];
+      var bx = lead.x - Math.cos(lead.a) * gap, by = lead.y - Math.sin(lead.a) * gap;
+      k.x += (bx - k.x) * Math.min(1, dt * 2.5); k.y += (by - k.y) * Math.min(1, dt * 2.5);
+      k.a = Math.atan2(lead.y - k.y, lead.x - k.x);
+      lead = k; gap = ds * 0.5;
+    }
+  }
+  function drawDuckShape(x, y, a, ds, female, flying, flap) {
+    var body = female ? "#9A7652" : "#B9B3A8", chest = female ? "#8A6646" : "#7A4A32";
+    var head = female ? "#8A6A4A" : "#2F7A4A", bill = female ? "#E08A3A" : "#E8C23A";
+    ctx.save();
+    ctx.translate(x + ds * (flying ? 0.8 : 0.08), y + ds * (flying ? 1.1 : 0.12));
+    ctx.rotate(a);
+    ctx.globalAlpha = flying ? 0.12 : 0.18;
+    ctx.fillStyle = colors.shade;
+    ctx.beginPath(); ctx.ellipse(0, 0, ds * 0.5, flying ? ds * 0.8 : ds * 0.28, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(a);
+    var side;
+    if (flying) {
+      var span = ds * (0.6 + 0.4 * Math.abs(Math.sin(flap)));
+      for (side = -1; side <= 1; side += 2) {
+        ctx.fillStyle = body;
+        ctx.beginPath(); ctx.ellipse(-ds * 0.02, side * span * 0.55, ds * 0.2, span * 0.55, side * 0.2, 0, TAU); ctx.fill();
+        ctx.fillStyle = "#3B5BB0";
+        ctx.beginPath(); ctx.ellipse(-ds * 0.06, side * span * 0.55, ds * 0.07, span * 0.2, side * 0.2, 0, TAU); ctx.fill();
+      }
+    }
+    // хвост
+    ctx.fillStyle = female ? "#7A5A3C" : "#2A2A2E";
+    ctx.beginPath(); ctx.ellipse(-ds * 0.42, 0, ds * 0.12, ds * 0.1, 0, 0, TAU); ctx.fill();
+    // тело
+    ctx.fillStyle = body;
+    ctx.beginPath(); ctx.ellipse(-ds * 0.04, 0, ds * 0.42, ds * 0.24, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = chest;
+    ctx.beginPath(); ctx.ellipse(ds * 0.22, 0, ds * 0.15, ds * 0.2, 0, 0, TAU); ctx.fill();
+    if (!flying) {
+      ctx.fillStyle = female ? "#7E5D3E" : "#8F897E";
+      for (side = -1; side <= 1; side += 2) {
+        ctx.beginPath(); ctx.ellipse(-ds * 0.1, side * ds * 0.12, ds * 0.26, ds * 0.08, side * 0.08, 0, TAU); ctx.fill();
+      }
+      ctx.fillStyle = "#3B5BB0";
+      for (side = -1; side <= 1; side += 2) {
+        ctx.fillRect(-ds * 0.16, side * ds * 0.16 - ds * 0.025, ds * 0.1, ds * 0.05);
+      }
+    }
+    // шея и голова
+    if (!female) { ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.ellipse(ds * 0.3, 0, ds * 0.05, ds * 0.11, 0, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = head;
+    ctx.beginPath(); ctx.arc(ds * 0.4, 0, ds * 0.13, 0, TAU); ctx.fill();
+    ctx.fillStyle = bill;
+    ctx.beginPath(); ctx.ellipse(ds * 0.56, 0, ds * 0.08, ds * 0.05, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = "#1B1B1B";
+    for (side = -1; side <= 1; side += 2) { ctx.beginPath(); ctx.arc(ds * 0.44, side * ds * 0.08, ds * 0.022, 0, TAU); ctx.fill(); }
+    ctx.restore();
+  }
+  function drawDuckling(k, ds) {
+    var s = ds * 0.42;
+    ctx.save();
+    ctx.translate(k.x + s * 0.1, k.y + s * 0.15);
+    ctx.globalAlpha = 0.18; ctx.fillStyle = colors.shade;
+    ctx.beginPath(); ctx.arc(0, 0, s * 0.4, 0, TAU); ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.translate(k.x, k.y);
+    ctx.rotate(k.a);
+    ctx.fillStyle = "#F2D35A";
+    ctx.beginPath(); ctx.ellipse(0, 0, s * 0.42, s * 0.3, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = "#8A6A3A";
+    ctx.beginPath(); ctx.ellipse(-s * 0.06, 0, s * 0.22, s * 0.14, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = "#F2D35A";
+    ctx.beginPath(); ctx.arc(s * 0.36, 0, s * 0.2, 0, TAU); ctx.fill();
+    ctx.fillStyle = "#E08A3A";
+    ctx.beginPath(); ctx.ellipse(s * 0.56, 0, s * 0.08, s * 0.06, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+  function drawDucks(flyingLayer) {
+    if (!ducks) return;
+    var d = ducks.duck, ds = duckSize(), flying = d.state === "fly-in" || d.state === "fly-out";
+    if (flying !== flyingLayer) return;
+    for (var i = 0; i < ducks.kids.length; i++) drawDuckling(ducks.kids[i], ds);
+    drawDuckShape(d.x, d.y, d.a, ds, d.female, flying, d.flap);
+  }
+
   function draw() {
     drawBackground();
     drawFood(false);
@@ -1422,10 +1777,15 @@ body {
     drawPads();
     drawFood(true);
     drawCritters();
+    drawDucks(false);
     drawShore();
     for (i = 0; i < roses.length; i++) drawRose(roses[i]);
+    for (i = 0; i < feeders.length; i++) drawFeeder(feeders[i]);
     drawJumps();
+    for (i = 0; i < birds.length; i++) if (birds[i].state === "perch") drawBird(birds[i]);
     drawSky();
+    for (i = 0; i < birds.length; i++) if (birds[i].state !== "perch") drawBird(birds[i]);
+    drawDucks(true);
   }
 
   var last = 0;
@@ -1438,6 +1798,8 @@ body {
       for (i = 0; i < fishes.length; i++) updateFish(fishes[i], dt);
       updateCritters(dt);
       updateSky(dt);
+      updateBirds(dt);
+      updateDucks(dt);
       for (i = foods.length - 1; i >= 0; i--) {
         foods[i].life -= dt;
         if (foods[i].life <= 0) foods.splice(i, 1);
@@ -1467,6 +1829,7 @@ body {
     feed: "Нажмите на воду или кувшинку, чтобы бросить корм.",
     pad: "Нажмите на воду, чтобы посадить кувшинку.",
     rose: "Нажмите на берег, чтобы посадить розовый куст.",
+    feeder: "Нажмите на берег, чтобы поставить кормушку. К ней будут прилетать птицы и утки.",
     frog: "Нажмите на кувшинку, чтобы посадить на неё лягушку.",
     snail: "Нажмите на кувшинку, чтобы посадить на неё улитку.",
     remove: "Нажмите на жителя пруда или украшение, чтобы убрать."
@@ -1474,6 +1837,7 @@ body {
   var MODE_LABELS = {
     pad: "Сажаем кувшинки",
     rose: "Сажаем розовые кусты",
+    feeder: "Ставим кормушки",
     frog: "Сажаем лягушек",
     snail: "Сажаем улиток",
     remove: "Удаляем"
@@ -1552,15 +1916,27 @@ body {
       }
       var pp = padPos(pad);
       ripples.push({ x: pp.x, y: pp.y, t: 0, max: 26 });
+    } else if (tool === "feeder") {
+      if (!onShore(x, y)) { flash("Кормушку ставим на берег, а не в воду."); return; }
+      if (feeders.length >= MAX_FEEDERS) { flash("Трёх кормушек птицам хватит."); return; }
+      feeders.push({ x: x / W, y: y / H, seed: Math.floor(rand(1, 2147483647)) });
+      birdTimer = Math.min(birdTimer, rand(2, 4));
+      if (!ducks) duckTimer = Math.min(duckTimer, rand(10, 18));
     } else if (tool === "rose") {
       if (!onShore(x, y)) { flash("Розы растут только на берегу, по краю пруда."); return; }
       if (roses.length >= MAX_ROSES) { flash("На берегу больше нет места. Уберите куст, чтобы посадить новый."); return; }
       roses.push({ x: x / W, y: y / H, s: rand(0.5, 0.62), seed: Math.floor(rand(1, 2147483647)), c: Math.floor(rand(0, ROSE_COLORS.length)) });
     } else {
       var best = -1, kind = null, bd = Infinity, i, d;
-      for (i = 0; i < roses.length; i++) {
-        d = Math.hypot(roses[i].x * W - x, roses[i].y * H - y);
-        if (d < roses[i].s * shore() * 1.1 && d < bd) { bd = d; best = i; kind = "rose"; }
+      for (i = 0; i < feeders.length; i++) {
+        d = Math.hypot(feeders[i].x * W - x, feeders[i].y * H - y);
+        if (d < feederSize() * 0.8 && d < bd) { bd = d; best = i; kind = "feeder"; }
+      }
+      if (kind === null) {
+        for (i = 0; i < roses.length; i++) {
+          d = Math.hypot(roses[i].x * W - x, roses[i].y * H - y);
+          if (d < roses[i].s * shore() * 1.1 && d < bd) { bd = d; best = i; kind = "rose"; }
+        }
       }
       var hitPad = kind === null ? findPadAt(x, y) : null;
       var hitFish = -1, hitAxo = -1;
@@ -1579,7 +1955,8 @@ body {
           }
         }
       }
-      if (kind === "rose") roses.splice(best, 1);
+      if (kind === "feeder") feeders.splice(best, 1);
+      else if (kind === "rose") roses.splice(best, 1);
       else if (hitAxo >= 0) {
         var h0 = axos[hitAxo].pts[0];
         ripples.push({ x: h0.x, y: h0.y, t: 0, max: 30 });
@@ -1637,7 +2014,8 @@ body {
         if (p.snails.length) o.snails = p.snails.map(function (sn) { return sn.c; });
         return o;
       }),
-      roses: roses.map(function (b) { return { x: r4(b.x), y: r4(b.y), s: r4(b.s), seed: b.seed, c: b.c }; })
+      roses: roses.map(function (b) { return { x: r4(b.x), y: r4(b.y), s: r4(b.s), seed: b.seed, c: b.c }; }),
+      feeders: feeders.map(function (f) { return { x: r4(f.x), y: r4(f.y), seed: f.seed }; })
     };
   }
 
@@ -1663,6 +2041,14 @@ body {
     roses = list(st.roses).slice(0, MAX_ROSES).map(function (o) {
       return { x: inside01(o.x), y: inside01(o.y), s: clamp(num(o.s, 0.5), 0.3, 0.7), seed: Math.abs(num(o.seed, 1) | 0) || 1, c: Math.abs(num(o.c, 0) | 0) };
     });
+    feeders = list(st.feeders).slice(0, MAX_FEEDERS).map(function (o) {
+      return { x: inside01(o.x), y: inside01(o.y), seed: Math.abs(num(o.seed, 7) | 0) || 7 };
+    });
+    birds = [];
+    ducks = null;
+    birdTimer = rand(3, 6);
+    duckTimer = rand(15, 30);
+    foods = [];
     lastJson = JSON.stringify(snapshotState());
     updateCount();
     if (paused) draw();
@@ -1687,6 +2073,7 @@ body {
   }
 
   function persist(force) {
+    if (guest) return;
     var st = snapshotState();
     var json = JSON.stringify(st);
     if (!force && json === lastJson) return;
@@ -1732,6 +2119,7 @@ body {
       return withTimeout(ref.get(), 10000).then(function (snap) {
         remote = ref;
         var d = snap.exists ? snap.data() : null;
+        if (guest) return;
         if (d && num(d.savedAt, 0) > localSavedAt) {
           applyState(d);
           try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch (e) { /* ничего */ }
@@ -1792,6 +2180,111 @@ body {
   // в режиме паузы и «по часам» тоже следим за временем
   setInterval(function () { if (paused) { updateSky(0, true); draw(); } }, 60000);
 
+  /* ---------- ссылка на свой пруд ---------- */
+  var guestEl = document.getElementById("guest");
+  var shareBtn = document.getElementById("share");
+  function q(v) { return Math.round(v * 1000); }
+  function encodePond() {
+    var st = snapshotState();
+    var c = {
+      v: 2, s: st.sky,
+      a: st.axos.map(function (o) { return [o.vi, q(o.k)]; }),
+      f: st.fishes.map(function (o) { return [o.vi, Math.round(o.len)]; }),
+      p: st.pads.map(function (o) { return [q(o.x), q(o.y), q(o.r), q(o.rot), o.frog ? 1 : 0, o.snails || []]; }),
+      r: st.roses.map(function (o) { return [q(o.x), q(o.y), q(o.s), o.seed, o.c]; }),
+      b: st.feeders.map(function (o) { return [q(o.x), q(o.y), o.seed]; })
+    };
+    return btoa(JSON.stringify(c)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function decodePond(str) {
+    var b64 = str.replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    var c = JSON.parse(atob(b64));
+    if (!c || c.v !== 2) return null;
+    var arr = function (v) { return Array.isArray(v) ? v : []; };
+    var u = function (v) { return num(v, 500) / 1000; };
+    var spot = function () { var t = randomTarget(); return { x: t.x / W, y: t.y / H }; };
+    return {
+      sky: c.s,
+      axos: arr(c.a).map(function (o) { o = arr(o); var p = spot(); return { vi: o[0], k: u(o[1]), x: p.x, y: p.y }; }),
+      fishes: arr(c.f).map(function (o) { o = arr(o); var p = spot(); return { vi: o[0], len: o[1], x: p.x, y: p.y }; }),
+      pads: arr(c.p).map(function (o) { o = arr(o); return { x: u(o[0]), y: u(o[1]), r: u(o[2]), rot: u(o[3]), frog: o[4], snails: arr(o[5]) }; }),
+      roses: arr(c.r).map(function (o) { o = arr(o); return { x: u(o[0]), y: u(o[1]), s: u(o[2]), seed: o[3], c: o[4] }; }),
+      feeders: arr(c.b).map(function (o) { o = arr(o); return { x: u(o[0]), y: u(o[1]), seed: o[2] }; })
+    };
+  }
+  function pondLink() {
+    return location.href.split("#")[0] + "#pond=" + encodePond();
+  }
+  function clearHash() {
+    try { history.replaceState(null, "", location.href.split("#")[0]); } catch (e) { location.hash = ""; }
+  }
+  function openShared() {
+    var m = /^#pond=(.+)$/.exec(location.hash || "");
+    if (!m) return false;
+    var st = null;
+    try { st = decodePond(m[1]); } catch (e) { st = null; }
+    if (!st) { clearHash(); flash("Эта ссылка на пруд не открылась."); return false; }
+    persist(false);           // свой пруд сохраняем до перехода в гости
+    guest = true;
+    if (decorMode) exitMode();
+    applyState(st);
+    guestEl.hidden = false;
+    flash("Вы в гостях в чужом пруду. Покормите жителей!");
+    return true;
+  }
+  function leaveGuest(keep) {
+    guest = false;
+    guestEl.hidden = true;
+    clearHash();
+    if (keep) {
+      persist(true);
+      flash("Теперь этот пруд ваш.");
+    } else {
+      if (!loadLocal()) {
+        applyState({ pads: defaultPads().map(function (p) { return { x: p.x, y: p.y, r: p.r, rot: p.rot }; }) });
+        for (var i = 0; i < 5; i++) addAxo(false);
+        lastJson = JSON.stringify(snapshotState());
+      }
+      flash("Вы вернулись в свой пруд.");
+    }
+    addBtn.focus();
+  }
+  document.getElementById("adopt").addEventListener("click", function () { leaveGuest(true); });
+  document.getElementById("go-home").addEventListener("click", function () { leaveGuest(false); });
+  window.addEventListener("hashchange", function () { openShared(); });
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      if (ok) resolve(); else reject(new Error("copy"));
+    });
+  }
+  shareBtn.addEventListener("click", function () {
+    closeMenus();
+    var url = pondLink();
+    var copyIt = function () {
+      copyText(url).then(function () {
+        flash("Ссылка на пруд скопирована. Отправьте её друзьям!");
+      }, function () {
+        flash("Не получилось скопировать ссылку.");
+      });
+    };
+    if (navigator.share) {
+      navigator.share({ title: "Мой Дзен пруд", text: "Загляни в мой Дзен пруд 🦎", url: url }).then(null, function (e) {
+        if (!e || e.name !== "AbortError") copyIt();
+      });
+    } else {
+      copyIt();
+    }
+  });
+
   window.addEventListener("resize", resize);
   var mq = window.matchMedia("(prefers-color-scheme: dark)");
   var onTheme = function () { readColors(); if (paused) draw(); };
@@ -1808,6 +2301,7 @@ body {
     lastJson = JSON.stringify(snapshotState());
   }
   updateCount();
+  openShared();
   connectRemote();
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     setPaused(true);
