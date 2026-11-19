@@ -20,6 +20,7 @@
   --ink-soft: #1F534C;
   --panel: rgba(243, 255, 250, 0.72);
   --panel-ink: #0D3833;
+  --glass-strong: rgba(255, 255, 255, 0.85);
   --accent: #F6A6BA;
   --accent-ink: #45101F;
   --focus: #45101F;
@@ -48,6 +49,7 @@
     --ink-soft: #B4D8CC;
     --panel: rgba(6, 36, 40, 0.72);
     --panel-ink: #E4F5EC;
+    --glass-strong: rgba(20, 60, 64, 0.9);
     --accent: #F6A6BA;
     --accent-ink: #45101F;
     --focus: #FFE3EA;
@@ -73,6 +75,7 @@
   --ink-soft: #B4D8CC;
   --panel: rgba(6, 36, 40, 0.72);
   --panel-ink: #E4F5EC;
+  --glass-strong: rgba(20, 60, 64, 0.9);
   --accent: #F6A6BA;
   --accent-ink: #45101F;
   --focus: #FFE3EA;
@@ -137,10 +140,42 @@ body {
 .controls {
   position: relative;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 0.5rem;
   padding: 0 1.5rem 1.25rem;
   pointer-events: none;
+}
+.controls .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.4rem;
+  border-radius: 1.4rem;
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 6px 20px rgba(4, 30, 30, 0.18);
+  pointer-events: auto;
+}
+.menu[hidden] { display: none; }
+.controls .menu button { background: var(--glass-strong); }
+.mode-label {
+  font-weight: 600;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--panel-ink);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.controls button[aria-expanded="true"] {
+  box-shadow: inset 0 0 0 2px var(--panel-ink);
 }
 .controls button {
   pointer-events: auto;
@@ -162,11 +197,6 @@ body {
   color: var(--accent-ink);
 }
 .controls[hidden] { display: none; }
-.controls button.tool[aria-pressed="true"] {
-  background: var(--accent);
-  color: var(--accent-ink);
-  box-shadow: inset 0 0 0 2px var(--accent-ink);
-}
 .controls button:disabled { opacity: 0.6; cursor: default; }
 .controls button:focus-visible {
   outline: 3px solid var(--focus);
@@ -177,7 +207,8 @@ body {
   .controls { padding: 0 1.1rem 1rem; }
   .controls button { padding: 0.5rem 0.8rem; font-size: 0.875rem; }
   .intro p { font-size: 0.875rem; }
-  .controls { gap: 0.4rem; }
+  .controls, .controls .row { gap: 0.4rem; }
+  .mode-label { padding: 0.5rem 0.8rem; font-size: 0.875rem; }
 }
 </style>
 </head>
@@ -186,25 +217,35 @@ body {
 
 <header class="intro">
   <h1>Дзен пруд</h1>
-  <p><span class="count" id="count" aria-live="polite"></span> <span id="hint" aria-live="polite">Нажмите на воду, чтобы бросить корм.</span></p>
+  <p><span class="count" id="count" aria-live="polite"></span> <span id="hint" aria-live="polite">Нажмите на воду или кувшинку, чтобы бросить корм.</span></p>
 </header>
 
 <div class="controls" id="main-controls">
-  <button class="primary" id="add" type="button">Добавить аксолотля</button>
-  <button id="fish" type="button">Добавить рыбку</button>
-  <button id="feed" type="button">Бросить корм</button>
-  <button id="decor" type="button">Украсить</button>
-  <button id="sky" type="button" aria-label="Время суток: по часам">🌗 По часам</button>
-  <button id="pause" type="button">Пауза</button>
+  <div class="menu" id="add-menu" role="group" aria-label="Кого добавить" hidden>
+    <button id="add-axo" type="button">Аксолотля</button>
+    <button id="add-fish" type="button">Рыбку</button>
+    <button data-mode="frog" type="button">Лягушку</button>
+    <button data-mode="snail" type="button">Улитку</button>
+  </div>
+  <div class="menu" id="decor-menu" role="group" aria-label="Чем украсить" hidden>
+    <button data-mode="pad" type="button">Кувшинку</button>
+    <button data-mode="rose" type="button">Розовый куст</button>
+  </div>
+  <div class="row">
+    <button class="primary" id="add" type="button" aria-expanded="false" aria-controls="add-menu">Добавить ▾</button>
+    <button id="decor" type="button" aria-expanded="false" aria-controls="decor-menu">Украсить ▾</button>
+    <button id="remove" type="button">Удалить</button>
+    <button id="feed" type="button">Бросить корм</button>
+    <button id="sky" type="button" aria-label="Время суток: по часам">🌗 По часам</button>
+    <button id="pause" type="button" aria-label="Пауза">⏸</button>
+  </div>
 </div>
 
-<div class="controls" id="decor-controls" hidden>
-  <button class="tool" data-tool="pad" type="button" aria-pressed="true">Кувшинка</button>
-  <button class="tool" data-tool="rose" type="button" aria-pressed="false">Розовый куст</button>
-  <button class="tool" data-tool="frog" type="button" aria-pressed="false">Лягушка</button>
-  <button class="tool" data-tool="snail" type="button" aria-pressed="false">Улитка</button>
-  <button class="tool" data-tool="remove" type="button" aria-pressed="false">Убрать</button>
-  <button class="primary" id="done" type="button">Готово</button>
+<div class="controls" id="mode-controls" hidden>
+  <div class="row">
+    <span class="mode-label" id="mode-label"></span>
+    <button class="primary" id="done" type="button">Готово</button>
+  </div>
 </div>
 
 <script>
@@ -215,16 +256,21 @@ body {
   var ctx = canvas.getContext("2d");
   var countEl = document.getElementById("count");
   var addBtn = document.getElementById("add");
+  var addMenu = document.getElementById("add-menu");
+  var decorMenu = document.getElementById("decor-menu");
+  var addAxoBtn = document.getElementById("add-axo");
+  var removeBtn = document.getElementById("remove");
+  var modeControls = document.getElementById("mode-controls");
+  var modeLabel = document.getElementById("mode-label");
+  var modeBtns = Array.prototype.slice.call(document.querySelectorAll("[data-mode]"));
   var feedBtn = document.getElementById("feed");
   var pauseBtn = document.getElementById("pause");
-  var fishBtn = document.getElementById("fish");
+  var fishBtn = document.getElementById("add-fish");
   var decorBtn = document.getElementById("decor");
   var skyBtn = document.getElementById("sky");
   var doneBtn = document.getElementById("done");
   var hintEl = document.getElementById("hint");
   var mainControls = document.getElementById("main-controls");
-  var decorControls = document.getElementById("decor-controls");
-  var toolBtns = Array.prototype.slice.call(document.querySelectorAll(".tool"));
 
   var MAX_PADS = 16;
   var MAX_ROSES = 40;
@@ -513,16 +559,56 @@ body {
     var text = parts.length > 1 ? parts.slice(0, -1).join(", ") + " и " + parts[parts.length - 1] : parts[0];
     countEl.textContent = "В пруду " + text + ".";
     fishBtn.disabled = fn >= MAX_FISH;
-    fishBtn.textContent = fn >= MAX_FISH ? "Рыбок достаточно" : "Добавить рыбку";
+    fishBtn.textContent = fn >= MAX_FISH ? "Рыбок хватит" : "Рыбку";
     var full = axos.length >= MAX_AXOS;
-    addBtn.disabled = full;
-    addBtn.textContent = full ? "Пруд полон" : "Добавить аксолотля";
+    addAxoBtn.disabled = full;
+    addAxoBtn.textContent = full ? "Аксолотлей хватит" : "Аксолотля";
   }
 
   function dropFood(x, y) {
-    if (foods.length >= 30) foods.shift();
-    foods.push({ x: x, y: y, life: 45, born: time });
-    ripples.push({ x: x, y: y, t: 0, max: 46 });
+    if (foods.length >= 40) foods.shift();
+    var f = { x: x, y: y, life: 45, born: time, pad: null };
+    var pad = findPadAt(x, y);
+    if (pad) {
+      var pp = padPos(pad);
+      f.pad = pad; f.ox = x - pp.x; f.oy = y - pp.y;
+    } else {
+      ripples.push({ x: x, y: y, t: 0, max: 46 });
+    }
+    foods.push(f);
+  }
+  // корм для всех: часть в воду, часть на кувшинки к лягушкам и улиткам
+  function scatterFood() {
+    for (var i = 0; i < 5; i++) {
+      var t = randomTarget();
+      dropFood(t.x, t.y);
+    }
+    for (i = 0; i < pads.length; i++) {
+      var p = pads[i];
+      var lived = p.frog || p.snails.length || jumps.some(function (jm) { return jm.to === p; });
+      if (!lived) continue;
+      var pp = padPos(p), a = rand(0, TAU), d = padRadius(p) * 0.58;
+      dropFood(pp.x + Math.cos(a) * d, pp.y + Math.sin(a) * d);
+    }
+  }
+  function foodPos(f) {
+    if (f.pad) { var pp = padPos(f.pad); return { x: pp.x + f.ox, y: pp.y + f.oy }; }
+    return f;
+  }
+  function eatFood(f) {
+    var i = foods.indexOf(f);
+    if (i >= 0) foods.splice(i, 1);
+  }
+  // ближайший корм в воде (не на кувшинке)
+  function nearestWaterFood(x, y) {
+    var best = null, bd = Infinity;
+    for (var i = 0; i < foods.length; i++) {
+      var f = foods[i];
+      if (f.pad) continue;
+      var d = (f.x - x) * (f.x - x) + (f.y - y) * (f.y - y);
+      if (d < bd) { bd = d; best = f; }
+    }
+    return best ? { food: best, dist: Math.sqrt(bd) } : null;
   }
 
   /* ---------- движение ---------- */
@@ -531,15 +617,11 @@ body {
     var hungry = false;
     var target = ax.target;
 
-    if (foods.length) {
-      var best = null, bd = Infinity;
-      for (var f = 0; f < foods.length; f++) {
-        var d2 = (foods[f].x - head.x) * (foods[f].x - head.x) + (foods[f].y - head.y) * (foods[f].y - head.y);
-        if (d2 < bd) { bd = d2; best = foods[f]; }
-      }
-      target = best; hungry = true;
-      if (Math.sqrt(bd) < ax.size * 0.14) {
-        foods.splice(foods.indexOf(best), 1);
+    var near = nearestWaterFood(head.x, head.y);
+    if (near) {
+      target = near.food; hungry = true;
+      if (near.dist < ax.size * 0.14) {
+        eatFood(near.food);
         ax.gulp = 1;
         ripples.push({ x: head.x, y: head.y, t: 0, max: 22 });
       }
@@ -777,18 +859,28 @@ body {
 
   function updateFish(f, dt) {
     var sp = f.sp;
-    f.timer -= dt;
-    var dx = f.target.x - f.x, dy = f.target.y - f.y;
-    if (dx * dx + dy * dy < f.len * f.len || f.timer <= 0) {
-      f.target = randomTarget();
-      f.timer = rand(3, 8) / sp.speed;
-      f.dart = Math.random() < sp.dart ? 1 : 0;
+    var near = nearestWaterFood(f.x, f.y), dx, dy, hungry = false;
+    if (near) {
+      hungry = true;
+      dx = near.food.x - f.x; dy = near.food.y - f.y;
+      if (near.dist < f.len * 0.4) {
+        eatFood(near.food);
+        ripples.push({ x: near.food.x, y: near.food.y, t: 0, max: 16 });
+      }
+    } else {
+      f.timer -= dt;
       dx = f.target.x - f.x; dy = f.target.y - f.y;
+      if (dx * dx + dy * dy < f.len * f.len || f.timer <= 0) {
+        f.target = randomTarget();
+        f.timer = rand(3, 8) / sp.speed;
+        f.dart = Math.random() < sp.dart ? 1 : 0;
+        dx = f.target.x - f.x; dy = f.target.y - f.y;
+      }
     }
     var diff = angDiff(f.a, Math.atan2(dy, dx));
-    f.a += clamp(diff, -sp.turn * dt, sp.turn * dt);
+    f.a += clamp(diff, -sp.turn * (hungry ? 1.4 : 1) * dt, sp.turn * (hungry ? 1.4 : 1) * dt);
     if (f.dart > 0) f.dart = Math.max(0, f.dart - dt * 0.8);
-    var goal = f.len * sp.speed * (1.5 + f.dart * 2.5 * (1 - nightLevel)) * Math.max(0.4, Math.cos(diff / 2)) * (1 - 0.5 * nightLevel);
+    var goal = f.len * sp.speed * (hungry ? 2.2 : 1.5 + f.dart * 2.5 * (1 - nightLevel)) * Math.max(0.4, Math.cos(diff / 2)) * (1 - 0.5 * nightLevel);
     f.speed += (goal - f.speed) * Math.min(1, dt * 2);
     f.phase += dt * (sp.flap + f.speed / f.len * 3);
     f.x += Math.cos(f.a) * f.speed * dt;
@@ -952,15 +1044,17 @@ body {
     ctx.globalAlpha = 1;
   }
 
-  function drawFood() {
+  function drawFood(onPads) {
     for (var i = 0; i < foods.length; i++) {
       var f = foods[i];
-      var bob = Math.sin((time - f.born) * 2) * 1.2;
+      if (!!f.pad !== onPads) continue;
+      var pos = foodPos(f);
+      var bob = onPads ? 0 : Math.sin((time - f.born) * 2) * 1.2;
       ctx.globalAlpha = clamp(f.life / 4, 0, 1);
       ctx.fillStyle = "#6B3F26";
-      ctx.beginPath(); ctx.arc(f.x, f.y + bob, 4.2, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(pos.x, pos.y + bob, 4.2, 0, TAU); ctx.fill();
       ctx.fillStyle = "#A8693F";
-      ctx.beginPath(); ctx.arc(f.x - 1.2, f.y + bob - 1.2, 1.6, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(pos.x - 1.2, pos.y + bob - 1.2, 1.6, 0, TAU); ctx.fill();
     }
     ctx.globalAlpha = 1;
   }
@@ -1108,13 +1202,55 @@ body {
   function updateCritters(dt) {
     for (var i = 0; i < pads.length; i++) {
       var p = pads[i];
-      for (var j = 0; j < p.snails.length; j++) p.snails[j].ang += p.snails[j].dir * p.snails[j].speed * dt;
+      var padFoods = foods.filter(function (f) { return f.pad === p; });
+      for (var j = 0; j < p.snails.length; j++) {
+        var sn = p.snails[j], meal = null, md = Infinity;
+        for (var k = 0; k < padFoods.length; k++) {
+          var dd = Math.abs(angDiff(sn.ang, Math.atan2(padFoods[k].oy, padFoods[k].ox)));
+          if (dd < md && foods.indexOf(padFoods[k]) >= 0) { md = dd; meal = padFoods[k]; }
+        }
+        if (meal) {
+          var want = angDiff(sn.ang, Math.atan2(meal.oy, meal.ox));
+          sn.dir = want >= 0 ? 1 : -1;
+          if (Math.abs(want) < 0.3) {
+            sn.munch = (sn.munch || 0) + dt;
+            if (sn.munch > 1.2) { eatFood(meal); sn.munch = 0; }
+          } else {
+            sn.ang += sn.dir * Math.min(Math.abs(want), 0.5 * dt);
+          }
+        } else {
+          sn.ang += sn.dir * sn.speed * dt;
+        }
+      }
       var fr = p.frog;
       if (!fr) continue;
       fr.blink -= dt;
       if (fr.blink < -0.15) fr.blink = 2 + Math.random() * 4;
+      if (fr.tongue) {
+        var tg = fr.tongue;
+        tg.t += dt * 3.2;
+        if (foods.indexOf(tg.food) >= 0) { var fp = foodPos(tg.food); tg.x = fp.x; tg.y = fp.y; }
+        if (!tg.ate && tg.t >= 0.5) { eatFood(tg.food); tg.ate = true; }
+        if (tg.t >= 1) fr.tongue = null;
+      } else {
+        fr.cool = (fr.cool || 0) - dt;
+        if (fr.cool <= 0 && foods.length) {
+          var ppf = padPos(p), reach = frogSize(p) * 2.6, prey = null, pd = Infinity;
+          for (k = 0; k < foods.length; k++) {
+            var fp2 = foodPos(foods[k]), d3 = Math.hypot(fp2.x - ppf.x, fp2.y - ppf.y);
+            if (d3 < reach && d3 < pd) { pd = d3; prey = foods[k]; }
+          }
+          if (prey) {
+            var pp3 = foodPos(prey);
+            fr.a = Math.atan2(pp3.y - ppf.y, pp3.x - ppf.x);
+            fr.tongue = { t: 0, food: prey, ate: false, x: pp3.x, y: pp3.y };
+            fr.cool = 1.4;
+            fr.nextJump = Math.max(fr.nextJump, 3);
+          }
+        }
+      }
       fr.nextJump -= dt;
-      if (fr.nextJump <= 0) {
+      if (fr.nextJump <= 0 && !fr.tongue) {
         fr.nextJump = 12 + Math.random() * 22;
         var free = pads.filter(function (q) { return q !== p && !q.frog && !q.reserved; });
         if (free.length) {
@@ -1149,7 +1285,22 @@ body {
         var sn = p.snails[j], rr = r * 0.58;
         drawSnail(pp.x + Math.cos(sn.ang) * rr, pp.y + Math.sin(sn.ang) * rr, sn.ang + sn.dir * Math.PI / 2, snailSize(p), sn.c);
       }
-      if (p.frog) drawFrog(pp.x, pp.y, p.frog.a, frogSize(p), 1, p.frog.blink > 0, Math.sin(time * 3 + p.ph));
+      if (p.frog) {
+        var fs = frogSize(p);
+        drawFrog(pp.x, pp.y, p.frog.a, fs, 1, p.frog.blink > 0, Math.sin(time * 3 + p.ph));
+        var tg = p.frog.tongue;
+        if (tg) {
+          var ext = tg.t < 0.5 ? tg.t * 2 : (1 - tg.t) * 2;
+          var mx = pp.x + Math.cos(p.frog.a) * fs * 0.4, my = pp.y + Math.sin(p.frog.a) * fs * 0.4;
+          var tx = mx + (tg.x - mx) * ext, ty = my + (tg.y - my) * ext;
+          ctx.strokeStyle = "#E8577A";
+          ctx.lineWidth = Math.max(2, fs * 0.08);
+          ctx.lineCap = "round";
+          ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(tx, ty); ctx.stroke();
+          ctx.fillStyle = "#E8577A";
+          ctx.beginPath(); ctx.arc(tx, ty, Math.max(2.5, fs * 0.08), 0, TAU); ctx.fill();
+        }
+      }
     }
   }
 
@@ -1264,11 +1415,12 @@ body {
 
   function draw() {
     drawBackground();
-    drawFood();
+    drawFood(false);
     for (var i = 0; i < axos.length; i++) drawAxo(axos[i]);
     for (i = 0; i < fishes.length; i++) drawFish(fishes[i]);
     drawRipples();
     drawPads();
+    drawFood(true);
     drawCritters();
     drawShore();
     for (i = 0; i < roses.length; i++) drawRose(roses[i]);
@@ -1301,8 +1453,8 @@ body {
 
   function setPaused(p) {
     paused = p;
-    pauseBtn.textContent = paused ? "Продолжить" : "Пауза";
-    pauseBtn.setAttribute("aria-pressed", paused ? "true" : "false");
+    pauseBtn.textContent = paused ? "▶" : "⏸";
+    pauseBtn.setAttribute("aria-label", paused ? "Продолжить" : "Пауза");
     if (paused) draw();
   }
 
@@ -1312,34 +1464,69 @@ body {
   var tool = "pad";
   var hintTimer = 0;
   var HINTS = {
-    feed: "Нажмите на воду, чтобы бросить корм.",
+    feed: "Нажмите на воду или кувшинку, чтобы бросить корм.",
     pad: "Нажмите на воду, чтобы посадить кувшинку.",
     rose: "Нажмите на берег, чтобы посадить розовый куст.",
     frog: "Нажмите на кувшинку, чтобы посадить на неё лягушку.",
     snail: "Нажмите на кувшинку, чтобы посадить на неё улитку.",
     remove: "Нажмите на жителя пруда или украшение, чтобы убрать."
   };
+  var MODE_LABELS = {
+    pad: "Сажаем кувшинки",
+    rose: "Сажаем розовые кусты",
+    frog: "Сажаем лягушек",
+    snail: "Сажаем улиток",
+    remove: "Удаляем"
+  };
+  var modeOpener = null;
   function restoreHint() { hintEl.textContent = decorMode ? HINTS[tool] : HINTS.feed; }
   function flash(msg) {
     hintEl.textContent = msg;
     clearTimeout(hintTimer);
     hintTimer = setTimeout(restoreHint, 2600);
   }
-  function setTool(t) {
-    tool = t;
-    toolBtns.forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-tool") === t ? "true" : "false"); });
-    clearTimeout(hintTimer);
-    restoreHint();
+  function closeMenus() {
+    addMenu.hidden = true;
+    decorMenu.hidden = true;
+    addBtn.setAttribute("aria-expanded", "false");
+    decorBtn.setAttribute("aria-expanded", "false");
   }
-  function setDecor(on) {
-    decorMode = on;
-    mainControls.hidden = on;
-    decorControls.hidden = !on;
-    canvas.style.cursor = on ? "copy" : "crosshair";
+  function toggleMenu(menu, btn) {
+    var open = menu.hidden;
+    closeMenus();
+    if (open) {
+      menu.hidden = false;
+      btn.setAttribute("aria-expanded", "true");
+      menu.querySelector("button:not(:disabled)").focus();
+    }
+  }
+  function enterMode(t, opener) {
+    if ((t === "frog" || t === "snail") && !pads.length) {
+      closeMenus();
+      flash("Сначала посадите кувшинку: лягушки и улитки живут на кувшинках.");
+      return;
+    }
+    closeMenus();
+    tool = t;
+    decorMode = true;
+    modeOpener = opener || null;
+    mainControls.hidden = true;
+    modeControls.hidden = false;
+    modeLabel.textContent = MODE_LABELS[t];
+    canvas.style.cursor = t === "remove" ? "pointer" : "copy";
     clearTimeout(hintTimer);
     restoreHint();
-    (on ? toolBtns[0] : decorBtn).focus();
-    if (!on) saveSoon();
+    doneBtn.focus();
+  }
+  function exitMode() {
+    decorMode = false;
+    mainControls.hidden = false;
+    modeControls.hidden = true;
+    canvas.style.cursor = "crosshair";
+    clearTimeout(hintTimer);
+    restoreHint();
+    (modeOpener || addBtn).focus();
+    saveSoon();
   }
 
   function padRadius(p) { return p.r * Math.min(Math.min(W, H) * 1.3, 1000); }
@@ -1410,6 +1597,7 @@ body {
         else if (hitPad.snails.length) hitPad.snails.pop();
         else {
           pads.splice(pads.indexOf(hitPad), 1);
+          foods = foods.filter(function (f) { return f.pad !== hitPad; });
           jumps = jumps.filter(function (jm) {
             if (jm.to === hitPad) { jm.from.frog = jm.from.frog || jm.frog; return false; }
             return true;
@@ -1558,27 +1746,41 @@ body {
   canvas.addEventListener("pointerdown", function (e) {
     var rect = canvas.getBoundingClientRect();
     var x = e.clientX - rect.left, y = e.clientY - rect.top;
+    if (!addMenu.hidden || !decorMenu.hidden) { closeMenus(); return; }
     if (decorMode) handleDecor(x, y);
     else if (inWater(x, y)) dropFood(x, y);
     if (paused) draw();
   });
-  decorBtn.addEventListener("click", function () { setDecor(true); });
-  doneBtn.addEventListener("click", function () { setDecor(false); });
-  toolBtns.forEach(function (b) {
-    b.addEventListener("click", function () { setTool(b.getAttribute("data-tool")); });
+  addBtn.addEventListener("click", function () { toggleMenu(addMenu, addBtn); });
+  decorBtn.addEventListener("click", function () { toggleMenu(decorMenu, decorBtn); });
+  removeBtn.addEventListener("click", function () { enterMode("remove", removeBtn); });
+  doneBtn.addEventListener("click", exitMode);
+  modeBtns.forEach(function (b) {
+    var opener = addMenu.contains(b) ? addBtn : decorBtn;
+    b.addEventListener("click", function () { enterMode(b.getAttribute("data-mode"), opener); });
   });
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && decorMode) setDecor(false);
+    if (e.key !== "Escape") return;
+    if (!addMenu.hidden) { closeMenus(); addBtn.focus(); }
+    else if (!decorMenu.hidden) { closeMenus(); decorBtn.focus(); }
+    else if (decorMode) exitMode();
   });
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "hidden") persist(false);
   });
   window.addEventListener("pagehide", function () { persist(false); });
-  addBtn.addEventListener("click", function () { addAxo(true); saveSoon(); if (paused) draw(); });
-  fishBtn.addEventListener("click", function () { addFish(); saveSoon(); if (paused) draw(); });
+  addAxoBtn.addEventListener("click", function () {
+    addAxo(true); closeMenus(); addBtn.focus();
+    flash("Приплыл аксолотль!");
+    saveSoon(); if (paused) draw();
+  });
+  fishBtn.addEventListener("click", function () {
+    addFish(); closeMenus(); addBtn.focus();
+    saveSoon(); if (paused) draw();
+  });
   feedBtn.addEventListener("click", function () {
-    var t = randomTarget();
-    dropFood(t.x, t.y);
+    closeMenus();
+    scatterFood();
     if (paused) draw();
   });
   pauseBtn.addEventListener("click", function () { setPaused(!paused); });
