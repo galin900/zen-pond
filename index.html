@@ -1913,7 +1913,7 @@ body {
   var sparkles = [];
   (function () {
     var rnd = seeded(77);
-    for (var i = 0; i < 46; i++) sparkles.push({ x: rnd(), y: rnd(), ph: rnd() * TAU, sp: 0.8 + rnd() * 1.6, len: 5 + rnd() * 10, dx: (rnd() - 0.5) * 0.01 });
+    for (var i = 0; i < 14; i++) sparkles.push({ x: rnd(), y: rnd(), ph: rnd() * TAU, sp: 0.8 + rnd() * 1.6, len: 5 + rnd() * 10, dx: (rnd() - 0.5) * 0.01 });
   })();
 
   function shoreLine(left, width, style, alpha) {
@@ -1975,10 +1975,10 @@ body {
     var sf = makeLayer(); ctx = sf.g;
     ctx.globalAlpha = 0.1; ctx.fillStyle = colors["water-deep"]; ctx.fillRect(0, 0, W, H);
     var gr = ctx.createLinearGradient(0, 0, W * 0.8, H);
-    gr.addColorStop(0, "rgba(255, 255, 255, 0.22)");
+    gr.addColorStop(0, "rgba(255, 255, 255, 0.12)");
     gr.addColorStop(0.35, "rgba(255, 255, 255, 0)");
     gr.addColorStop(0.7, "rgba(255, 255, 255, 0)");
-    gr.addColorStop(1, "rgba(255, 255, 255, 0.1)");
+    gr.addColorStop(1, "rgba(255, 255, 255, 0.05)");
     ctx.globalAlpha = 1; ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
     surfCache = sf.c;
     ctx = saved;
@@ -1992,8 +1992,8 @@ body {
     var cw = causticCanvas.width, ch = causticCanvas.height;
     cctx.clearRect(0, 0, cw, ch);
     var layers = [
-      { k: 1.6, vx: 9, vy: 5, a: 0.17 },
-      { k: 2.3, vx: -6, vy: 8, a: 0.12 }
+      { k: 1.8, vx: 7, vy: 4, a: 0.08 },
+      { k: 2.6, vx: -5, vy: 6, a: 0.05 }
     ];
     for (var i = 0; i < layers.length; i++) {
       var L = layers[i], span = CAUSTIC_SIZE * L.k;
@@ -2023,11 +2023,11 @@ body {
     for (var i = 0; i < sparkles.length; i++) {
       var sp = sparkles[i];
       var tw = Math.sin(time * sp.sp + sp.ph);
-      if (tw <= 0.55) continue;
+      if (tw <= 0.7) continue;
       var x = ((sp.x + time * sp.dx) % 1 + 1) % 1 * W, y = sp.y * H;
       if (!inWater(x, y, 6)) continue;
-      var k = Math.pow((tw - 0.55) / 0.45, 2) * power;
-      ctx.globalAlpha = 0.75 * k;
+      var k = Math.pow((tw - 0.7) / 0.3, 2) * power;
+      ctx.globalAlpha = 0.45 * k;
       ctx.fillStyle = "#FFFFFF";
       ctx.beginPath();
       ctx.ellipse(x, y, sp.len * (0.6 + 0.4 * k), 1.2 + k, -0.35, 0, TAU);
