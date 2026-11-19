@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Дзен пруд</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Golos+Text:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --water-shallow: #C4E6D6;
+  --water-deep: #6DB3A4;
+  --glint: #F3FFF4;
+  --pebble: #3E7F74;
+  --pad: #4F9A62;
+  --pad-vein: #3B7F4E;
+  --shade: #0B3B36;
+  --ink: #0D3833;
+  --ink-soft: #1F534C;
+  --panel: rgba(243, 255, 250, 0.72);
+  --panel-ink: #0D3833;
+  --accent: #F6A6BA;
+  --accent-ink: #45101F;
+  --focus: #45101F;
+  --night-rgb: 8, 18, 58;
+  --night-max: 0.55;
+  --grass: #9BCB7F;
+  --grass-dark: #78AE5F;
+  --sand: #E9DFB8;
+  --leaf: #3F7D3A;
+  --leaf-dark: #2F6330;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --water-shallow: #15504F;
+    --water-deep: #082A2E;
+    --glint: #7FD9C4;
+    --pebble: #04181B;
+    --pad: #2F6B45;
+    --pad-vein: #24553A;
+    --shade: #000F12;
+    --ink: #E4F5EC;
+    --ink-soft: #B4D8CC;
+    --panel: rgba(6, 36, 40, 0.72);
+    --panel-ink: #E4F5EC;
+    --accent: #F6A6BA;
+    --accent-ink: #45101F;
+    --focus: #FFE3EA;
+    --night-rgb: 2, 8, 30;
+    --night-max: 0.4;
+    --grass: #1F4A2C;
+    --grass-dark: #17391F;
+    --sand: #34483A;
+    --leaf: #2E6A35;
+    --leaf-dark: #22522A;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --water-shallow: #15504F;
+  --water-deep: #082A2E;
+  --glint: #7FD9C4;
+  --pebble: #04181B;
+  --pad: #2F6B45;
+  --pad-vein: #24553A;
+  --shade: #000F12;
+  --ink: #E4F5EC;
+  --ink-soft: #B4D8CC;
+  --panel: rgba(6, 36, 40, 0.72);
+  --panel-ink: #E4F5EC;
+  --accent: #F6A6BA;
+  --accent-ink: #45101F;
+  --focus: #FFE3EA;
+  --night-rgb: 2, 8, 30;
+  --night-max: 0.4;
+  --grass: #1F4A2C;
+  --grass-dark: #17391F;
+  --sand: #34483A;
+  --leaf: #2E6A35;
+  --leaf-dark: #22522A;
+}
+
+*, *::before, *::after { box-sizing: inherit; }
+html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--water-deep);
+  color: var(--ink);
+  font-family: "Golos Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 1rem;
+  line-height: 1.45;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+#pond {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: manipulation;
+  cursor: crosshair;
+}
+
+.intro {
+  position: relative;
+  padding: 1.5rem 1.5rem 0;
+  max-width: 34rem;
+  pointer-events: none;
+}
+.intro h1 {
+  font-family: "Unbounded", "Golos Text", "Segoe UI", Arial, sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.35rem, 5.4vw, 2.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.6rem;
+}
+.intro p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+}
+.intro .count { font-weight: 600; color: var(--ink); }
+.intro { color: var(--ink); }
+:root.is-night .intro { --ink: #EEF6FF; --ink-soft: #CFDDF2; text-shadow: 0 1px 6px rgba(4, 10, 40, 0.6); }
+
+.controls {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0 1.5rem 1.25rem;
+  pointer-events: none;
+}
+.controls button {
+  pointer-events: auto;
+  font: inherit;
+  font-weight: 600;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.55rem 0.95rem;
+  min-height: 2.5rem;
+  font-size: 0.9375rem;
+  background: var(--panel);
+  color: var(--panel-ink);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+.controls button.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.controls[hidden] { display: none; }
+.controls button.tool[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: inset 0 0 0 2px var(--accent-ink);
+}
+.controls button:disabled { opacity: 0.6; cursor: default; }
+.controls button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+@media (max-width: 420px) {
+  .intro { padding: 1.1rem 1.1rem 0; }
+  .controls { padding: 0 1.1rem 1rem; }
+  .controls button { padding: 0.5rem 0.8rem; font-size: 0.875rem; }
+  .intro p { font-size: 0.875rem; }
+  .controls { gap: 0.4rem; }
+}
+</style>
+</head>
+<body>
+<canvas id="pond" aria-label="Пруд, в котором плавают аксолотли. Нажмите на воду, чтобы бросить корм."></canvas>
+
+<header class="intro">
+  <h1>Дзен пруд</h1>
+  <p><span class="count" id="count" aria-live="polite"></span> <span id="hint" aria-live="polite">Нажмите на воду, чтобы бросить корм.</span></p>
+</header>
+
+<div class="controls" id="main-controls">
+  <button class="primary" id="add" type="button">Добавить аксолотля</button>
+  <button id="fish" type="button">Добавить рыбку</button>
+  <button id="feed" type="button">Бросить корм</button>
+  <button id="decor" type="button">Украсить</button>
+  <button id="sky" type="button" aria-label="Время суток: по часам">🌗 По часам</button>
+  <button id="pause" type="button">Пауза</button>
+</div>
+
+<div class="controls" id="decor-controls" hidden>
+  <button class="tool" data-tool="pad" type="button" aria-pressed="true">Кувшинка</button>
+  <button class="tool" data-tool="rose" type="button" aria-pressed="false">Розовый куст</button>
+  <button class="tool" data-tool="frog" type="button" aria-pressed="false">Лягушка</button>
+  <button class="tool" data-tool="snail" type="button" aria-pressed="false">Улитка</button>
+  <button class="tool" data-tool="remove" type="button" aria-pressed="false">Убрать</button>
+  <button class="primary" id="done" type="button">Готово</button>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var canvas = document.getElementById("pond");
+  var ctx = canvas.getContext("2d");
+  var countEl = document.getElementById("count");
+  var addBtn = document.getElementById("add");
+  var feedBtn = document.getElementById("feed");
+  var pauseBtn = document.getElementById("pause");
+  var fishBtn = document.getElementById("fish");
+  var decorBtn = document.getElementById("decor");
+  var skyBtn = document.getElementById("sky");
+  var doneBtn = document.getElementById("done");
+  var hintEl = document.getElementById("hint");
+  var mainControls = document.getElementById("main-controls");
+  var decorControls = document.getElementById("decor-controls");
+  var toolBtns = Array.prototype.slice.call(document.querySelectorAll(".tool"));
+
+  var MAX_PADS = 16;
+  var MAX_ROSES = 40;
+  var MAX_SNAILS_PER_PAD = 2;
+  var SNAIL_SHELLS = [
+    { shell: "#B5733F", line: "#7A4520" },
+    { shell: "#E7B44C", line: "#A8731C" },
+    { shell: "#D98AA0", line: "#9C4D66" }
+  ];
+  var FROG = { body: "#6DBE45", dark: "#3F8A2B", spot: "#4E9E33", eye: "#F2E36B", pupil: "#1B1B1B" };
+  var ROSE_COLORS = [
+    { petal: "#F49AB4", dark: "#D35F80" },
+    { petal: "#E8475F", dark: "#A91F3A" },
+    { petal: "#FFD3DE", dark: "#EE8AA6" },
+    { petal: "#FF7FA8", dark: "#C93C69" }
+  ];
+
+  var W = 0, H = 0, DPR = 1;
+  var MAX_AXOS = 14;
+  var TAU = Math.PI * 2;
+  var N = 16; // сегментов в теле
+
+  var VARIANTS = [
+    { body: "#F7B9C6", belly: "#FBD3DB", gill: "#E2557C", spot: null },      // лейцист
+    { body: "#F3D27C", belly: "#F8E3A8", gill: "#E78F55", spot: "#FFF1C4" }, // золотой
+    { body: "#66744E", belly: "#7C8A60", gill: "#93506A", spot: "#3F4A31" }, // дикий
+    { body: "#FBEDEF", belly: "#FFFFFF", gill: "#F0728C", spot: null },      // альбинос
+    { body: "#474B5A", belly: "#5A5F70", gill: "#7A6E92", spot: null }       // меланист
+  ];
+
+  var MAX_FISH = 24;
+
+  function rrect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  var colors = {};
+  function readColors() {
+    var cs = getComputedStyle(document.documentElement);
+    ["water-shallow", "water-deep", "glint", "pebble", "pad", "pad-vein", "shade",
+     "grass", "grass-dark", "sand", "leaf", "leaf-dark", "night-rgb", "night-max"].forEach(function (k) {
+      colors[k] = cs.getPropertyValue("--" + k).trim();
+    });
+  }
+
+  function rand(a, b) { return a + Math.random() * (b - a); }
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function angDiff(a, b) {
+    var d = (b - a) % TAU;
+    if (d > Math.PI) d -= TAU;
+    if (d < -Math.PI) d += TAU;
+    return d;
+  }
+
+  // Детерминированный генератор для неподвижных деталей дна
+  function seeded(seed) {
+    return function () {
+      seed = (seed * 1664525 + 1013904223) % 4294967296;
+      return seed / 4294967296;
+    };
+  }
+  var sr = seeded(7);
+  var pebbles = [];
+  for (var i = 0; i < 46; i++) {
+    pebbles.push({ x: sr(), y: sr(), r: 6 + sr() * 16, sq: 0.6 + sr() * 0.35, rot: sr() * Math.PI, a: 0.08 + sr() * 0.1 });
+  }
+  var glints = [];
+  for (i = 0; i < 6; i++) {
+    glints.push({ x: sr(), y: sr(), r: 0.22 + sr() * 0.2, sx: 0.3 + sr() * 0.5, sy: 0.3 + sr() * 0.5, ph: sr() * TAU });
+  }
+  var tufts = [];
+  for (i = 0; i < 420; i++) {
+    tufts.push({ x: sr(), y: sr(), len: 4 + sr() * 5, rot: (sr() - 0.5) * 0.8 });
+  }
+  function makePad(x, y, r, rot) {
+    return { x: x, y: y, r: r, rot: rot, ph: Math.random() * 100, frog: null, snails: [], reserved: false };
+  }
+  function makeFrog() {
+    return { a: Math.random() * TAU, blink: 2 + Math.random() * 4, nextJump: 10 + Math.random() * 20 };
+  }
+  function makeSnail(c) {
+    return { ang: Math.random() * TAU, dir: Math.random() < 0.5 ? -1 : 1, c: Math.abs(c | 0) % SNAIL_SHELLS.length, speed: 0.05 + Math.random() * 0.05 };
+  }
+  function defaultPads() {
+    return [
+      makePad(0.78, 0.24, 0.1, 0.6),
+      makePad(0.86, 0.38, 0.06, 2.4),
+      makePad(0.22, 0.64, 0.08, 4.1)
+    ];
+  }
+  var jumps = [];
+  var pads = defaultPads();
+  var roses = [];
+
+  var axos = [];
+  var fishes = [];
+  var foods = [];
+  var ripples = [];
+  var time = 0;
+  var paused = false;
+
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = canvas.clientWidth;
+    H = canvas.clientHeight;
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    if (paused) draw();
+  }
+
+  /* ---------- берег ---------- */
+  // базовый масштаб берега (им же меряются кусты роз)
+  function shore() { return clamp(Math.min(W, H) * 0.11, 40, 72); }
+  function bulge() { return Math.min(W * 0.3, 380); }
+  function gauss(t, s) { return Math.exp(-(t * t) / (2 * s * s)); }
+  // ширина левого берега на высоте y: извилистый край + мыс в левом верхнем углу
+  function leftW(y) {
+    var t = y / H, b = shore() * 0.85;
+    return b * (1 + 0.38 * Math.sin(t * 9.1 + 0.7) + 0.22 * Math.sin(t * 23 + 2.1))
+      + bulge() * gauss(t, 0.2) * (1 + 0.1 * Math.sin(t * 31 + 1.3));
+  }
+  // ширина правого берега: извилистый край + мыс в правом нижнем углу
+  function rightW(y) {
+    var t = y / H, u = 1 - t, b = shore() * 0.85;
+    return b * (1 + 0.38 * Math.sin(t * 8.3 + 2.5) + 0.22 * Math.sin(t * 19.7 + 0.4))
+      + bulge() * gauss(u, 0.2) * (1 + 0.1 * Math.sin(u * 29 + 0.6));
+  }
+  // точка внутри воды; inset > 0 сужает область, < 0 расширяет
+  function inWater(x, y, inset) {
+    inset = inset || 0;
+    return x > leftW(y) + inset && x < W - rightW(y) - inset;
+  }
+  function onShore(x, y) {
+    return x >= 0 && x <= W && y >= 0 && y <= H && !inWater(x, y, -6);
+  }
+
+  function randomTarget() {
+    var m = Math.min(W, H) * 0.1;
+    for (var tries = 0; tries < 20; tries++) {
+      var y = rand(m, Math.max(m, H - m));
+      var x0 = leftW(y) + m, x1 = W - rightW(y) - m;
+      if (x1 > x0) return { x: rand(x0, x1), y: y };
+    }
+    return { x: W / 2, y: H / 2 };
+  }
+
+  function num(v, d) { return typeof v === "number" && isFinite(v) ? v : d; }
+
+  function makeAxo(x, y, variantIndex, k, a) {
+    var base = clamp(Math.min(W, H) / 8.5, 52, 96);
+    k = num(k, rand(0.78, 1.12));
+    var size = base * k;
+    a = num(a, rand(0, TAU));
+    var seg = size / N;
+    var pts = [];
+    for (var j = 0; j < N; j++) {
+      pts.push({ x: x - Math.cos(a) * seg * j, y: y - Math.sin(a) * seg * j });
+    }
+    return {
+      pts: pts, a: a, size: size, seg: seg,
+      speed: 0, phase: rand(0, TAU),
+      vi: Math.abs(variantIndex | 0) % VARIANTS.length, k: k,
+      v: VARIANTS[Math.abs(variantIndex | 0) % VARIANTS.length],
+      target: randomTarget(), rest: rand(0, 2), timer: rand(6, 12), gulp: 0
+    };
+  }
+
+  function addAxo(fromEdge) {
+    if (axos.length >= MAX_AXOS) return;
+    var x, y;
+    if (fromEdge) {
+      var side = Math.floor(rand(0, 4));
+      x = side === 0 ? -60 : side === 1 ? W + 60 : rand(0, W);
+      y = side === 2 ? -60 : side === 3 ? H + 60 : rand(0, H);
+    } else {
+      var t = randomTarget(); x = t.x; y = t.y;
+    }
+    var ax = makeAxo(x, y, axos.length);
+    if (fromEdge) { ax.rest = 0; ax.a = Math.atan2(H / 2 - y, W / 2 - x); }
+    axos.push(ax);
+    updateCount();
+  }
+
+  function plural(n, one, few, many) {
+    var m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return one;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+    return many;
+  }
+  /* ---------- день и ночь ---------- */
+  var skyMode = "auto";       // auto | day | night
+  var nightLevel = 0;         // 0 — день, 1 — ночь (плавно)
+  var warmLevel = 0;          // закат и рассвет
+  var SKY_LABELS = {
+    auto: ["🌗 По часам", "Время суток: по часам"],
+    day: ["☀️ День", "Время суток: день"],
+    night: ["🌙 Ночь", "Время суток: ночь"]
+  };
+  function smooth(a, b, x) { var t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
+  function bump(a, b, x) { return x <= a || x >= b ? 0 : Math.sin(Math.PI * (x - a) / (b - a)); }
+  function clockSky() {
+    var d = new Date(), h = d.getHours() + d.getMinutes() / 60;
+    return {
+      night: Math.max(1 - smooth(5, 7, h), smooth(19, 21.5, h)),
+      warm: bump(4.8, 8, h) + bump(18, 21.8, h)
+    };
+  }
+  function skyTarget() {
+    if (skyMode === "day") return { night: 0, warm: 0 };
+    if (skyMode === "night") return { night: 1, warm: 0 };
+    return clockSky();
+  }
+  function updateSky(dt, instant) {
+    var t = skyTarget(), k = instant ? 1 : Math.min(1, dt * 1.2);
+    nightLevel += (t.night - nightLevel) * k;
+    warmLevel += (t.warm - warmLevel) * k;
+    document.documentElement.classList.toggle("is-night", nightLevel > 0.45);
+  }
+  function setSky(mode) {
+    skyMode = SKY_LABELS[mode] ? mode : "auto";
+    skyBtn.textContent = SKY_LABELS[skyMode][0];
+    skyBtn.setAttribute("aria-label", SKY_LABELS[skyMode][1]);
+  }
+
+  var fireflies = [];
+  for (var ff = 0; ff < 22; ff++) {
+    fireflies.push({ x: Math.random(), y: Math.random(), sx: 0.2 + Math.random() * 0.5, sy: 0.2 + Math.random() * 0.5, ph: Math.random() * TAU, bl: 0.6 + Math.random() * 1.2 });
+  }
+  function drawSky() {
+    var n = nightLevel;
+    if (warmLevel > 0.01) {
+      ctx.fillStyle = "rgba(255, 150, 80, " + (0.13 * warmLevel) + ")";
+      ctx.fillRect(0, 0, W, H);
+    }
+    if (n < 0.01) return;
+    ctx.fillStyle = "rgba(" + colors["night-rgb"] + ", " + (num(parseFloat(colors["night-max"]), 0.5) * n) + ")";
+    ctx.fillRect(0, 0, W, H);
+
+    // лунная дорожка
+    var mx = W * 0.62, my = H * 0.3;
+    var g = ctx.createRadialGradient(mx, my, 0, mx, my, Math.min(W, H) * 0.35);
+    g.addColorStop(0, "rgba(220, 232, 255, " + (0.16 * n) + ")");
+    g.addColorStop(1, "rgba(220, 232, 255, 0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    // светлячки
+    var fa = clamp((n - 0.3) / 0.7, 0, 1);
+    if (fa <= 0) return;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for (var i = 0; i < fireflies.length; i++) {
+      var f = fireflies[i];
+      var x = (f.x + Math.sin(time * 0.07 * f.sx + f.ph) * 0.08) * W;
+      var y = (f.y + Math.cos(time * 0.06 * f.sy + f.ph * 1.7) * 0.08) * H;
+      var glow = Math.max(0, Math.sin(time * f.bl + f.ph)) * fa;
+      if (glow < 0.02) continue;
+      var r = 16;
+      var fg = ctx.createRadialGradient(x, y, 0, x, y, r);
+      fg.addColorStop(0, "rgba(255, 244, 160, " + (0.9 * glow) + ")");
+      fg.addColorStop(0.25, "rgba(230, 255, 120, " + (0.5 * glow) + ")");
+      fg.addColorStop(1, "rgba(230, 255, 120, 0)");
+      ctx.fillStyle = fg;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    ctx.restore();
+  }
+
+  function updateCount() {
+    var fn = fishes.length, frogN = jumps.length, snailN = 0;
+    for (var i = 0; i < pads.length; i++) {
+      if (pads[i].frog) frogN++;
+      snailN += pads[i].snails.length;
+    }
+    var parts = [axos.length + "\u00A0" + plural(axos.length, "аксолотль", "аксолотля", "аксолотлей")];
+    if (fn) parts.push(fn + "\u00A0" + plural(fn, "рыбка", "рыбки", "рыбок"));
+    if (frogN) parts.push(frogN + "\u00A0" + plural(frogN, "лягушка", "лягушки", "лягушек"));
+    if (snailN) parts.push(snailN + "\u00A0" + plural(snailN, "улитка", "улитки", "улиток"));
+    var text = parts.length > 1 ? parts.slice(0, -1).join(", ") + " и " + parts[parts.length - 1] : parts[0];
+    countEl.textContent = "В пруду " + text + ".";
+    fishBtn.disabled = fn >= MAX_FISH;
+    fishBtn.textContent = fn >= MAX_FISH ? "Рыбок достаточно" : "Добавить рыбку";
+    var full = axos.length >= MAX_AXOS;
+    addBtn.disabled = full;
+    addBtn.textContent = full ? "Пруд полон" : "Добавить аксолотля";
+  }
+
+  function dropFood(x, y) {
+    if (foods.length >= 30) foods.shift();
+    foods.push({ x: x, y: y, life: 45, born: time });
+    ripples.push({ x: x, y: y, t: 0, max: 46 });
+  }
+
+  /* ---------- движение ---------- */
+  function updateAxo(ax, dt) {
+    var head = ax.pts[0];
+    var hungry = false;
+    var target = ax.target;
+
+    if (foods.length) {
+      var best = null, bd = Infinity;
+      for (var f = 0; f < foods.length; f++) {
+        var d2 = (foods[f].x - head.x) * (foods[f].x - head.x) + (foods[f].y - head.y) * (foods[f].y - head.y);
+        if (d2 < bd) { bd = d2; best = foods[f]; }
+      }
+      target = best; hungry = true;
+      if (Math.sqrt(bd) < ax.size * 0.14) {
+        foods.splice(foods.indexOf(best), 1);
+        ax.gulp = 1;
+        ripples.push({ x: head.x, y: head.y, t: 0, max: 22 });
+      }
+    } else {
+      ax.timer -= dt;
+      var dx0 = target.x - head.x, dy0 = target.y - head.y;
+      if (dx0 * dx0 + dy0 * dy0 < ax.size * ax.size * 0.3 || ax.timer <= 0) {
+        ax.target = target = randomTarget();
+        ax.rest = Math.random() < 0.6 + 0.35 * nightLevel ? rand(0.6, 3.5) * (1 + 2 * nightLevel) : 0;
+        ax.timer = rand(7, 14);
+      }
+    }
+
+    var resting = !hungry && ax.rest > 0;
+    if (resting) ax.rest -= dt;
+
+    var want = Math.atan2(target.y - head.y, target.x - head.x);
+    var diff = angDiff(ax.a, want);
+    var turnRate = hungry ? 3.0 : resting ? 0.4 : 1.5;
+    ax.a += clamp(diff, -turnRate * dt, turnRate * dt);
+
+    var top = ax.size * (hungry ? 1.25 : 0.5) * (1 - 0.6 * nightLevel);
+    var goal = resting ? ax.size * 0.05 : top * Math.max(0.3, Math.cos(diff / 2));
+    ax.speed += (goal - ax.speed) * Math.min(1, dt * 1.6);
+
+    var effort = clamp(ax.speed / (ax.size * 0.9), 0, 1);
+    ax.phase += dt * (1.6 + effort * 8);
+    var ha = ax.a + Math.sin(ax.phase) * 0.42 * (0.25 + effort);
+
+    head.x += Math.cos(ha) * ax.speed * dt;
+    head.y += Math.sin(ha) * ax.speed * dt;
+
+    for (var j = 1; j < N; j++) {
+      var p = ax.pts[j], q = ax.pts[j - 1];
+      var dx = p.x - q.x, dy = p.y - q.y;
+      var d = Math.sqrt(dx * dx + dy * dy) || 0.0001;
+      p.x = q.x + dx / d * ax.seg;
+      p.y = q.y + dy / d * ax.seg;
+    }
+    if (ax.gulp > 0) ax.gulp = Math.max(0, ax.gulp - dt * 3);
+    ax.effort = effort;
+  }
+
+  /* ---------- рисование ---------- */
+  function bodyWidth(t) {
+    // доля от длины: шея, туловище, сужение к хвосту
+    if (t < 0.12) return 0.07 + (t / 0.12) * 0.015;
+    if (t < 0.55) return 0.085;
+    if (t > 0.8) return 0;
+    var k = (t - 0.55) / 0.25;
+    return 0.085 * (1 - Math.pow(k, 1.6) * 0.75);
+  }
+  function finWidth(t) {
+    if (t < 0.5 || t > 0.8) return 0;
+    var k = (t - 0.5) / 0.3;
+    return bodyWidth(t) + 0.035 * Math.sin(k * Math.PI * 0.85 + 0.3);
+  }
+
+  function strokeChain(pts, size, fn, from) {
+    // тело из повёрнутых прямоугольных блоков
+    var seg = size / N;
+    ctx.fillStyle = ctx.strokeStyle;
+    for (var j = from; j < N; j++) {
+      var w = fn(j / (N - 1)) * size;
+      if (w <= 0) continue;
+      ctx.save();
+      ctx.translate(pts[j].x, pts[j].y);
+      ctx.rotate(segAngle(pts, j));
+      ctx.fillRect(-seg * 0.62, -w, seg * 1.24, w * 2);
+      ctx.restore();
+    }
+  }
+
+  function segAngle(pts, j) {
+    var a = pts[Math.max(0, j - 1)], b = pts[Math.min(N - 1, j + 1)];
+    return Math.atan2(a.y - b.y, a.x - b.x);
+  }
+
+  function drawLegs(ax) {
+    var s = ax.size, pts = ax.pts;
+    var spots = [{ j: 3, off: 0 }, { j: 8, off: Math.PI }];
+    ctx.lineCap = "square";
+    ctx.strokeStyle = ax.v.body;
+    for (var k = 0; k < spots.length; k++) {
+      var j = spots[k].j, p = pts[j], ang = segAngle(pts, j);
+      for (var side = -1; side <= 1; side += 2) {
+        var swing = Math.sin(ax.phase + spots[k].off + (side > 0 ? 0 : Math.PI)) * 0.55 * (0.2 + ax.effort);
+        var la = ang + side * (1.9 + swing);
+        var bx = p.x + Math.cos(ang + side * Math.PI / 2) * s * 0.06;
+        var by = p.y + Math.sin(ang + side * Math.PI / 2) * s * 0.06;
+        var ex = bx + Math.cos(la) * s * 0.1, ey = by + Math.sin(la) * s * 0.1;
+        ctx.lineWidth = s * 0.034;
+        ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(ex, ey); ctx.stroke();
+        ctx.lineWidth = s * 0.014;
+        for (var toe = -1; toe <= 1; toe++) {
+          ctx.beginPath();
+          ctx.moveTo(ex, ey);
+          ctx.lineTo(ex + Math.cos(la + toe * 0.55) * s * 0.035, ey + Math.sin(la + toe * 0.55) * s * 0.035);
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  function drawHead(ax) {
+    var s = ax.size, h = ax.pts[0];
+    var ang = segAngle(ax.pts, 0);
+    ctx.save();
+    ctx.translate(h.x, h.y);
+    ctx.rotate(ang);
+
+    // жабры
+    var gillAngles = [1.75, 2.3, 2.8];
+    var gillLen = [0.17, 0.19, 0.15];
+    ctx.lineCap = "butt";
+    ctx.strokeStyle = ax.v.gill;
+    for (var side = -1; side <= 1; side += 2) {
+      for (var g = 0; g < 3; g++) {
+        var th = side * (gillAngles[g] + Math.sin(ax.phase * 0.6 + g * 1.3) * 0.1 - ax.effort * 0.18);
+        var bx = -s * 0.05, by = side * s * 0.085;
+        var ex = bx + Math.cos(th) * s * gillLen[g], ey = by + Math.sin(th) * s * gillLen[g];
+        var cx = bx + Math.cos(th - side * 0.35) * s * gillLen[g] * 0.55;
+        var cy = by + Math.sin(th - side * 0.35) * s * gillLen[g] * 0.55;
+        ctx.lineWidth = s * 0.032;
+        ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(cx, cy, ex, ey); ctx.stroke();
+        // бахрома
+        ctx.lineWidth = s * 0.012;
+        for (var q = 1; q <= 5; q++) {
+          var u = q / 5.5, iu = 1 - u;
+          var px = iu * iu * bx + 2 * iu * u * cx + u * u * ex;
+          var py = iu * iu * by + 2 * iu * u * cy + u * u * ey;
+          for (var fs = -1; fs <= 1; fs += 2) {
+            var fa = th + fs * 1.15;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(px + Math.cos(fa) * s * 0.035, py + Math.sin(fa) * s * 0.035);
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    // голова
+    var puff = 1 + ax.gulp * 0.12;
+    ctx.fillStyle = ax.v.body;
+    rrect(-s * 0.105 * puff, -s * 0.122 * puff, s * 0.23 * puff, s * 0.244 * puff, s * 0.028);
+    ctx.fill();
+    ctx.fillStyle = ax.v.belly;
+    ctx.globalAlpha = 0.55;
+    rrect(-s * 0.03, -s * 0.075, s * 0.13, s * 0.15, s * 0.015);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // глаза
+    ctx.fillStyle = "#2A1B22";
+    for (side = -1; side <= 1; side += 2) {
+      ctx.fillRect(s * 0.039, side * s * 0.082 - s * 0.016, s * 0.032, s * 0.032);
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.8)";
+    for (side = -1; side <= 1; side += 2) {
+      ctx.fillRect(s * 0.058, side * s * 0.082 - s * 0.012, s * 0.01, s * 0.01);
+    }
+    ctx.restore();
+  }
+
+  function drawAxo(ax) {
+    var s = ax.size, pts = ax.pts;
+
+    // тень на дне
+    ctx.save();
+    ctx.translate(s * 0.06, s * 0.1);
+    ctx.globalAlpha = 0.13;
+    ctx.strokeStyle = colors.shade;
+    ctx.fillStyle = colors.shade;
+    strokeChain(pts, s, bodyWidth, 0);
+    ctx.translate(pts[0].x, pts[0].y);
+    ctx.rotate(segAngle(pts, 0));
+    ctx.fillRect(-s * 0.105, -s * 0.122, s * 0.23, s * 0.244);
+    ctx.restore();
+
+    // хвостовой плавник
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = ax.v.belly;
+    strokeChain(pts, s, finWidth, 6);
+    ctx.globalAlpha = 1;
+
+    drawLegs(ax);
+
+    ctx.strokeStyle = ax.v.body;
+    strokeChain(pts, s, bodyWidth, 0);
+
+    // светлая полоса вдоль спины
+    ctx.globalAlpha = 0.45;
+    ctx.strokeStyle = ax.v.belly;
+    strokeChain(pts, s, function (t) { return bodyWidth(t) * 0.38; }, 1);
+    ctx.globalAlpha = 1;
+
+    if (ax.v.spot) {
+      ctx.fillStyle = ax.v.spot;
+      ctx.globalAlpha = 0.7;
+      for (var j = 2; j < 11; j += 2) {
+        var ang = segAngle(pts, j) + Math.PI / 2;
+        var off = ((j / 2) % 2 ? 1 : -1) * s * 0.04;
+        ctx.fillRect(pts[j].x + Math.cos(ang) * off - s * 0.013, pts[j].y + Math.sin(ang) * off - s * 0.013, s * 0.026, s * 0.026);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    drawHead(ax);
+  }
+
+  /* ---------- тропические рыбки ---------- */
+  function makeFish(x, y, vi, len, a) {
+    vi = Math.abs(vi | 0) % FISH_SPECIES.length;
+    var sp = FISH_SPECIES[vi];
+    return {
+      x: x, y: y, a: num(a, rand(0, TAU)),
+      len: clamp(num(len, rand(sp.len[0], sp.len[1])), sp.len[0] * 0.8, sp.len[1] * 1.2),
+      speed: 0, phase: rand(0, TAU),
+      vi: vi, sp: sp,
+      target: randomTarget(), timer: rand(3, 7), dart: 0
+    };
+  }
+
+  function addFish() {
+    if (fishes.length >= MAX_FISH) return;
+    var side = Math.floor(rand(0, 4));
+    var x = side === 0 ? -40 : side === 1 ? W + 40 : rand(0, W);
+    var y = side === 2 ? -40 : side === 3 ? H + 40 : rand(0, H);
+    var vi = Math.floor(rand(0, FISH_SPECIES.length));
+    fishes.push(makeFish(x, y, vi, undefined, Math.atan2(H / 2 - y, W / 2 - x)));
+    updateCount();
+    flash(FISH_SPECIES[vi].hello);
+  }
+
+  function updateFish(f, dt) {
+    var sp = f.sp;
+    f.timer -= dt;
+    var dx = f.target.x - f.x, dy = f.target.y - f.y;
+    if (dx * dx + dy * dy < f.len * f.len || f.timer <= 0) {
+      f.target = randomTarget();
+      f.timer = rand(3, 8) / sp.speed;
+      f.dart = Math.random() < sp.dart ? 1 : 0;
+      dx = f.target.x - f.x; dy = f.target.y - f.y;
+    }
+    var diff = angDiff(f.a, Math.atan2(dy, dx));
+    f.a += clamp(diff, -sp.turn * dt, sp.turn * dt);
+    if (f.dart > 0) f.dart = Math.max(0, f.dart - dt * 0.8);
+    var goal = f.len * sp.speed * (1.5 + f.dart * 2.5 * (1 - nightLevel)) * Math.max(0.4, Math.cos(diff / 2)) * (1 - 0.5 * nightLevel);
+    f.speed += (goal - f.speed) * Math.min(1, dt * 2);
+    f.phase += dt * (sp.flap + f.speed / f.len * 3);
+    f.x += Math.cos(f.a) * f.speed * dt;
+    f.y += Math.sin(f.a) * f.speed * dt;
+  }
+
+  function fishEyes(L, ex, ey, r) {
+    for (var side = -1; side <= 1; side += 2) {
+      ctx.fillStyle = "#FFFFFF";
+      ctx.beginPath(); ctx.arc(L * ex, side * L * ey, L * r * 1.5, 0, TAU); ctx.fill();
+      ctx.fillStyle = "#16141A";
+      ctx.beginPath(); ctx.arc(L * (ex + 0.008), side * L * ey, L * r, 0, TAU); ctx.fill();
+    }
+  }
+  function fanTail(L, x0, len, half, fill, edge, wag) {
+    ctx.save();
+    ctx.translate(L * x0, 0);
+    ctx.rotate(wag);
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.moveTo(0, -L * 0.04);
+    ctx.quadraticCurveTo(-L * len * 0.6, -L * half * 1.2, -L * len, -L * half);
+    ctx.quadraticCurveTo(-L * len * 0.85, 0, -L * len, L * half);
+    ctx.quadraticCurveTo(-L * len * 0.6, L * half * 1.2, 0, L * 0.04);
+    ctx.closePath();
+    ctx.fill();
+    if (edge) { ctx.strokeStyle = edge; ctx.lineWidth = Math.max(1, L * 0.025); ctx.stroke(); }
+    ctx.restore();
+  }
+
+  // рыба-клоун: оранжевая, три белые полосы с чёрной каймой
+  function drawClown(f, L) {
+    var wag = Math.sin(f.phase) * 0.5, flap = Math.sin(f.phase * 0.9) * 0.05;
+    fanTail(L, -0.4, 0.26, 0.17, "#F2761E", "#1C1A1A", wag);
+    for (var side = -1; side <= 1; side += 2) {
+      ctx.fillStyle = "#F2761E"; ctx.strokeStyle = "#1C1A1A"; ctx.lineWidth = Math.max(1, L * 0.022);
+      ctx.beginPath(); ctx.ellipse(L * 0.04, side * L * (0.21 + flap), L * 0.11, L * 0.07, side * 0.5, 0, TAU); ctx.fill(); ctx.stroke();
+    }
+    ctx.fillStyle = "#F2761E";
+    ctx.beginPath(); ctx.ellipse(0, 0, L * 0.46, L * 0.19, 0, 0, TAU); ctx.fill();
+    ctx.save(); ctx.clip();
+    var bands = [[0.24, 0.09], [-0.02, 0.11], [-0.3, 0.07]];
+    for (var i = 0; i < bands.length; i++) {
+      var bx = bands[i][0] * L, bw = bands[i][1] * L;
+      ctx.fillStyle = "#1C1A1A"; ctx.fillRect(bx - bw / 2 - L * 0.025, -L, bw + L * 0.05, L * 2);
+      ctx.fillStyle = "#FFFFFF"; ctx.fillRect(bx - bw / 2, -L, bw, L * 2);
+    }
+    ctx.restore();
+    fishEyes(L, 0.36, 0.09, 0.026);
+  }
+
+  // рыба-кузовок: жёлтая «коробочка» в чёрный горошек
+  function drawBox(f, L) {
+    var wag = Math.sin(f.phase) * 0.35, flap = Math.sin(f.phase * 2.2) * 0.06;
+    fanTail(L, -0.34, 0.2, 0.12, "#F2C32E", null, wag);
+    for (var side = -1; side <= 1; side += 2) {
+      ctx.fillStyle = "#F2C32E";
+      ctx.beginPath(); ctx.ellipse(L * 0.12, side * L * (0.25 + flap), L * 0.07, L * 0.04, side * 0.6, 0, TAU); ctx.fill();
+    }
+    ctx.fillStyle = "#FFD83D";
+    rrect(-L * 0.36, -L * 0.24, L * 0.72, L * 0.48, L * 0.12);
+    ctx.fill();
+    ctx.strokeStyle = "#D9A91C"; ctx.lineWidth = Math.max(1, L * 0.02); ctx.stroke();
+    ctx.save(); ctx.clip();
+    for (var gx = -2; gx <= 2; gx++) {
+      for (var gy = -1; gy <= 1; gy++) {
+        var px = gx * L * 0.13 + (gy % 2 ? L * 0.065 : 0), py = gy * L * 0.14;
+        ctx.fillStyle = "#1C1A1A";
+        ctx.beginPath(); ctx.arc(px, py, L * 0.04, 0, TAU); ctx.fill();
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath(); ctx.arc(px, py, L * 0.017, 0, TAU); ctx.fill();
+      }
+    }
+    ctx.restore();
+    // губки
+    ctx.fillStyle = "#E89A2C";
+    ctx.beginPath(); ctx.ellipse(L * 0.37, 0, L * 0.04, L * 0.05, 0, 0, TAU); ctx.fill();
+    fishEyes(L, 0.27, 0.17, 0.03);
+  }
+
+  // рыба-хирург: синяя, тёмный узор по спине, жёлтый хвост
+  function drawTang(f, L) {
+    var wag = Math.sin(f.phase) * 0.45, flap = Math.sin(f.phase * 0.8) * 0.04;
+    fanTail(L, -0.42, 0.24, 0.2, "#FFD23A", "#1D2345", wag);
+    for (var side = -1; side <= 1; side += 2) {
+      ctx.fillStyle = "#FFD23A";
+      ctx.beginPath(); ctx.ellipse(L * 0.1, side * L * (0.22 + flap), L * 0.1, L * 0.05, side * 0.55, 0, TAU); ctx.fill();
+    }
+    ctx.fillStyle = "#2F62D6";
+    ctx.beginPath(); ctx.ellipse(0, 0, L * 0.47, L * 0.21, 0, 0, TAU); ctx.fill();
+    ctx.save(); ctx.clip();
+    // тёмная «палитра» вдоль спины
+    ctx.fillStyle = "#151B3D";
+    ctx.beginPath();
+    ctx.moveTo(L * 0.3, -L * 0.05);
+    ctx.quadraticCurveTo(L * 0.05, -L * 0.17, -L * 0.25, -L * 0.07);
+    ctx.quadraticCurveTo(-L * 0.42, 0, -L * 0.25, L * 0.07);
+    ctx.quadraticCurveTo(L * 0.05, L * 0.17, L * 0.3, L * 0.05);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#2F62D6";
+    ctx.beginPath(); ctx.ellipse(-L * 0.08, 0, L * 0.12, L * 0.045, 0, 0, TAU); ctx.fill();
+    // жёлтый «скальпель» у хвоста
+    ctx.fillStyle = "#FFD23A";
+    ctx.beginPath(); ctx.ellipse(-L * 0.4, 0, L * 0.06, L * 0.035, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+    fishEyes(L, 0.34, 0.1, 0.026);
+  }
+
+  function drawFish(f) {
+    var L = f.len, sp = f.sp;
+    ctx.save();
+    ctx.translate(f.x + L * 0.12, f.y + L * 0.2);
+    ctx.rotate(f.a);
+    ctx.globalAlpha = 0.13;
+    ctx.fillStyle = colors.shade;
+    ctx.beginPath(); ctx.ellipse(0, 0, L * 0.5, L * sp.shadow, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.rotate(f.a);
+    sp.draw(f, L);
+    ctx.restore();
+  }
+
+  var FISH_SPECIES = [
+    { name: "clown", hello: "Приплыла рыба-клоун!", len: [30, 40], speed: 1, turn: 2.6, dart: 0.35, flap: 6, shadow: 0.19, draw: drawClown },
+    { name: "box", hello: "Приплыла рыба-кузовок!", len: [26, 34], speed: 0.5, turn: 1.6, dart: 0.1, flap: 9, shadow: 0.24, draw: drawBox },
+    { name: "tang", hello: "Приплыла рыба-хирург!", len: [36, 48], speed: 1.25, turn: 2.2, dart: 0.3, flap: 5, shadow: 0.21, draw: drawTang }
+  ];
+
+  function drawBackground() {
+    var g = ctx.createRadialGradient(W * 0.3, H * 0.2, 0, W * 0.5, H * 0.5, Math.max(W, H) * 0.85);
+    g.addColorStop(0, colors["water-shallow"]);
+    g.addColorStop(1, colors["water-deep"]);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = colors.pebble;
+    for (var i = 0; i < pebbles.length; i++) {
+      var p = pebbles[i];
+      ctx.globalAlpha = p.a;
+      ctx.beginPath();
+      ctx.ellipse(p.x * W, p.y * H, p.r, p.r * p.sq, p.rot, 0, TAU);
+      ctx.fill();
+    }
+
+    for (i = 0; i < glints.length; i++) {
+      var c = glints[i];
+      var x = (c.x + Math.sin(time * 0.05 * c.sx + c.ph) * 0.12) * W;
+      var y = (c.y + Math.cos(time * 0.05 * c.sy + c.ph) * 0.12) * H;
+      var r = c.r * Math.max(W, H);
+      var rg = ctx.createRadialGradient(x, y, 0, x, y, r);
+      rg.addColorStop(0, colors.glint);
+      rg.addColorStop(1, "transparent");
+      ctx.globalAlpha = 0.14;
+      ctx.fillStyle = rg;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawFood() {
+    for (var i = 0; i < foods.length; i++) {
+      var f = foods[i];
+      var bob = Math.sin((time - f.born) * 2) * 1.2;
+      ctx.globalAlpha = clamp(f.life / 4, 0, 1);
+      ctx.fillStyle = "#6B3F26";
+      ctx.beginPath(); ctx.arc(f.x, f.y + bob, 4.2, 0, TAU); ctx.fill();
+      ctx.fillStyle = "#A8693F";
+      ctx.beginPath(); ctx.arc(f.x - 1.2, f.y + bob - 1.2, 1.6, 0, TAU); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawRipples() {
+    ctx.strokeStyle = colors.glint;
+    ctx.lineWidth = 1.6;
+    for (var i = 0; i < ripples.length; i++) {
+      var r = ripples[i];
+      for (var k = 0; k < 2; k++) {
+        var t = r.t - k * 0.25;
+        if (t <= 0 || t >= 1) continue;
+        ctx.globalAlpha = (1 - t) * 0.6;
+        ctx.beginPath(); ctx.arc(r.x, r.y, 4 + t * r.max, 0, TAU); ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function padPos(p) {
+    return { x: p.x * W + Math.sin(time * 0.3 + p.ph) * 3, y: p.y * H + Math.cos(time * 0.25 + p.ph * 2) * 3 };
+  }
+
+  function drawPads() {
+    for (var i = 0; i < pads.length; i++) {
+      var p = pads[i];
+      var r = padRadius(p);
+      var pp = padPos(p), x = pp.x, y = pp.y;
+      var rot = p.rot + Math.sin(time * 0.15 + p.ph) * 0.06;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = colors.shade;
+      ctx.beginPath(); ctx.arc(r * 0.08, r * 0.14, r, 0, TAU); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.rotate(rot);
+      ctx.fillStyle = colors.pad;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, r, 0.22, TAU - 0.22);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = colors["pad-vein"];
+      ctx.lineWidth = Math.max(1, r * 0.022);
+      ctx.lineCap = "round";
+      for (var v = 1; v < 8; v++) {
+        var a = 0.22 + (TAU - 0.44) * v / 8;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * r * 0.12, Math.sin(a) * r * 0.12);
+        ctx.lineTo(Math.cos(a) * r * 0.82, Math.sin(a) * r * 0.82);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  /* ---------- лягушки и улитки ---------- */
+  function frogSize(p) { return clamp(padRadius(p) * 0.8, 16, 36); }
+  function snailSize(p) { return clamp(padRadius(p) * 0.32, 8, 16); }
+
+  function drawFrog(x, y, a, f, scale, eyesOpen, breath) {
+    var c = FROG;
+    // тень
+    ctx.save();
+    ctx.translate(x + f * 0.08 * scale * scale, y + f * 0.12 * scale * scale);
+    ctx.rotate(a);
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = colors.shade;
+    ctx.beginPath(); ctx.ellipse(0, 0, f * 0.5, f * 0.4, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(a);
+    ctx.scale(scale, scale);
+    // задние лапы
+    ctx.fillStyle = c.dark;
+    for (var side = -1; side <= 1; side += 2) {
+      ctx.beginPath(); ctx.ellipse(-f * 0.22, side * f * 0.3, f * 0.26, f * 0.11, side * 0.5, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-f * 0.02, side * f * 0.38, f * 0.12, f * 0.06, side * -0.3, 0, TAU); ctx.fill();
+    }
+    // передние лапы
+    for (side = -1; side <= 1; side += 2) {
+      ctx.beginPath(); ctx.ellipse(f * 0.26, side * f * 0.24, f * 0.1, f * 0.045, side * 0.9, 0, TAU); ctx.fill();
+    }
+    // тело
+    var bw = f * 0.27 * (1 + breath * 0.04);
+    ctx.fillStyle = c.body;
+    ctx.beginPath(); ctx.ellipse(0, 0, f * 0.4, bw, 0, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(f * 0.2, 0, f * 0.22, f * 0.24, 0, 0, TAU); ctx.fill();
+    // пятнышки
+    ctx.fillStyle = c.spot;
+    ctx.beginPath(); ctx.arc(-f * 0.12, -f * 0.08, f * 0.05, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(-f * 0.2, f * 0.1, f * 0.04, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, f * 0.04, f * 0.035, 0, TAU); ctx.fill();
+    // глаза
+    for (side = -1; side <= 1; side += 2) {
+      ctx.fillStyle = c.body;
+      ctx.beginPath(); ctx.arc(f * 0.28, side * f * 0.15, f * 0.095, 0, TAU); ctx.fill();
+      if (eyesOpen) {
+        ctx.fillStyle = c.eye;
+        ctx.beginPath(); ctx.arc(f * 0.3, side * f * 0.15, f * 0.068, 0, TAU); ctx.fill();
+        ctx.fillStyle = c.pupil;
+        ctx.beginPath(); ctx.ellipse(f * 0.31, side * f * 0.15, f * 0.025, f * 0.045, 0, 0, TAU); ctx.fill();
+      } else {
+        ctx.strokeStyle = c.dark;
+        ctx.lineWidth = Math.max(1, f * 0.03);
+        ctx.beginPath(); ctx.moveTo(f * 0.25, side * f * 0.15); ctx.lineTo(f * 0.35, side * f * 0.15); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawSnail(x, y, a, s, sh) {
+    var c = SNAIL_SHELLS[sh];
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(a);
+    ctx.fillStyle = "#D8C7A0";
+    ctx.beginPath(); ctx.ellipse(s * 0.15, 0, s * 0.95, s * 0.32, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = "#B7A27A";
+    ctx.lineWidth = Math.max(1, s * 0.09);
+    ctx.lineCap = "round";
+    for (var side = -1; side <= 1; side += 2) {
+      ctx.beginPath(); ctx.moveTo(s * 0.9, side * s * 0.1); ctx.lineTo(s * 1.35, side * s * 0.35); ctx.stroke();
+    }
+    ctx.fillStyle = "#6B5A3A";
+    for (side = -1; side <= 1; side += 2) {
+      ctx.beginPath(); ctx.arc(s * 1.37, side * s * 0.36, s * 0.08, 0, TAU); ctx.fill();
+    }
+    ctx.fillStyle = c.shell;
+    ctx.beginPath(); ctx.arc(-s * 0.1, 0, s * 0.58, 0, TAU); ctx.fill();
+    ctx.strokeStyle = c.line;
+    ctx.lineWidth = Math.max(1, s * 0.1);
+    ctx.beginPath();
+    for (var k = 0; k <= 40; k++) {
+      var t = k / 40, ang = t * TAU * 2.2, rr = s * 0.5 * (1 - t * 0.85);
+      var px = -s * 0.1 + Math.cos(ang) * rr, py = Math.sin(ang) * rr;
+      if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function updateCritters(dt) {
+    for (var i = 0; i < pads.length; i++) {
+      var p = pads[i];
+      for (var j = 0; j < p.snails.length; j++) p.snails[j].ang += p.snails[j].dir * p.snails[j].speed * dt;
+      var fr = p.frog;
+      if (!fr) continue;
+      fr.blink -= dt;
+      if (fr.blink < -0.15) fr.blink = 2 + Math.random() * 4;
+      fr.nextJump -= dt;
+      if (fr.nextJump <= 0) {
+        fr.nextJump = 12 + Math.random() * 22;
+        var free = pads.filter(function (q) { return q !== p && !q.frog && !q.reserved; });
+        if (free.length) {
+          var to = free[Math.floor(Math.random() * free.length)];
+          var a = padPos(p), b = padPos(to);
+          fr.a = Math.atan2(b.y - a.y, b.x - a.x);
+          p.frog = null;
+          to.reserved = true;
+          jumps.push({ frog: fr, from: p, to: to, t: 0, dur: clamp(Math.hypot(b.x - a.x, b.y - a.y) / 420, 0.45, 1.1) });
+        } else {
+          fr.a += (Math.random() - 0.5) * 1.6;
+        }
+      }
+    }
+    for (i = jumps.length - 1; i >= 0; i--) {
+      var jm = jumps[i];
+      jm.t += dt / jm.dur;
+      if (jm.t >= 1) {
+        jm.to.reserved = false;
+        jm.to.frog = jm.frog;
+        var lp = padPos(jm.to);
+        ripples.push({ x: lp.x, y: lp.y, t: 0, max: frogSize(jm.to) * 1.4 });
+        jumps.splice(i, 1);
+      }
+    }
+  }
+
+  function drawCritters() {
+    for (var i = 0; i < pads.length; i++) {
+      var p = pads[i], pp = padPos(p), r = padRadius(p);
+      for (var j = 0; j < p.snails.length; j++) {
+        var sn = p.snails[j], rr = r * 0.58;
+        drawSnail(pp.x + Math.cos(sn.ang) * rr, pp.y + Math.sin(sn.ang) * rr, sn.ang + sn.dir * Math.PI / 2, snailSize(p), sn.c);
+      }
+      if (p.frog) drawFrog(pp.x, pp.y, p.frog.a, frogSize(p), 1, p.frog.blink > 0, Math.sin(time * 3 + p.ph));
+    }
+  }
+
+  function drawJumps() {
+    for (var i = 0; i < jumps.length; i++) {
+      var jm = jumps[i], a = padPos(jm.from), b = padPos(jm.to), t = jm.t;
+      var f = frogSize(jm.from) + (frogSize(jm.to) - frogSize(jm.from)) * t;
+      drawFrog(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, jm.frog.a, f, 1 + 0.45 * Math.sin(Math.PI * t), true, 0);
+    }
+  }
+
+  function findPadAt(x, y) {
+    var best = null, bd = Infinity;
+    for (var i = 0; i < pads.length; i++) {
+      var pp = padPos(pads[i]), d = Math.hypot(pp.x - x, pp.y - y);
+      if (d < padRadius(pads[i]) && d < bd) { bd = d; best = pads[i]; }
+    }
+    return best;
+  }
+
+  function drawShore() {
+    var step = 6, y;
+    function edge(left, cont) {
+      var x0 = left ? leftW(-20) : W - rightW(-20);
+      if (cont) ctx.lineTo(x0, -20); else ctx.moveTo(x0, -20);
+      for (y = -20 + step; y <= H + 20; y += step) {
+        ctx.lineTo(left ? leftW(y) : W - rightW(y), y);
+      }
+    }
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+
+    // тень от берега на воде
+    ctx.globalAlpha = 0.2;
+    ctx.strokeStyle = colors.shade;
+    ctx.lineWidth = 24;
+    ctx.beginPath(); edge(true); edge(false); ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // трава
+    ctx.fillStyle = colors.grass;
+    ctx.beginPath();
+    ctx.moveTo(-20, -20); edge(true, true); ctx.lineTo(-20, H + 20); ctx.closePath();
+    ctx.moveTo(W + 20, -20); edge(false, true); ctx.lineTo(W + 20, H + 20); ctx.closePath();
+    ctx.fill();
+
+    // песчаная кромка
+    ctx.strokeStyle = colors.sand;
+    ctx.lineWidth = 7;
+    ctx.beginPath(); edge(true); edge(false); ctx.stroke();
+
+    // травинки
+    ctx.strokeStyle = colors["grass-dark"];
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    for (var i = 0; i < tufts.length; i++) {
+      var t = tufts[i], x = t.x * W, y = t.y * H;
+      if (!inWater(x, y, -12)) {
+        for (var b = -1; b <= 1; b++) {
+          var a = -Math.PI / 2 + t.rot + b * 0.45;
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + Math.cos(a) * t.len, y + Math.sin(a) * t.len);
+        }
+      }
+    }
+    ctx.stroke();
+  }
+
+  function drawRose(b) {
+    var s = b.s * shore(), x = b.x * W, y = b.y * H;
+    var rnd = seeded(b.seed);
+    var col = ROSE_COLORS[b.c % ROSE_COLORS.length];
+
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = colors.shade;
+    ctx.beginPath(); ctx.ellipse(x + s * 0.15, y + s * 0.22, s * 1.05, s * 0.95, 0, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // листья
+    for (var i = 0; i < 9; i++) {
+      var a = i / 9 * TAU + rnd() * 0.5, d = s * (0.35 + rnd() * 0.3);
+      ctx.fillStyle = i % 2 ? colors.leaf : colors["leaf-dark"];
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, s * (0.36 + rnd() * 0.14), 0, TAU);
+      ctx.fill();
+    }
+    ctx.fillStyle = colors.leaf;
+    ctx.beginPath(); ctx.arc(x, y, s * 0.5, 0, TAU); ctx.fill();
+
+    // цветы
+    var n = 3 + Math.floor(rnd() * 3);
+    ctx.lineCap = "round";
+    for (i = 0; i < n; i++) {
+      var ang = rnd() * TAU, dist = s * Math.sqrt(rnd()) * 0.6;
+      var cx = x + Math.cos(ang) * dist, cy = y + Math.sin(ang) * dist;
+      var rr = s * (0.2 + rnd() * 0.1);
+      ctx.fillStyle = col.petal;
+      ctx.beginPath(); ctx.arc(cx, cy, rr, 0, TAU); ctx.fill();
+      ctx.strokeStyle = col.dark;
+      ctx.lineWidth = Math.max(1, rr * 0.16);
+      var st = rnd() * TAU;
+      for (var k = 0; k < 3; k++) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, rr * (0.78 - k * 0.24), st + k * 2.1, st + k * 2.1 + TAU * 0.72);
+        ctx.stroke();
+      }
+      ctx.fillStyle = col.dark;
+      ctx.beginPath(); ctx.arc(cx, cy, rr * 0.12, 0, TAU); ctx.fill();
+    }
+  }
+
+  function draw() {
+    drawBackground();
+    drawFood();
+    for (var i = 0; i < axos.length; i++) drawAxo(axos[i]);
+    for (i = 0; i < fishes.length; i++) drawFish(fishes[i]);
+    drawRipples();
+    drawPads();
+    drawCritters();
+    drawShore();
+    for (i = 0; i < roses.length; i++) drawRose(roses[i]);
+    drawJumps();
+    drawSky();
+  }
+
+  var last = 0;
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000 || 0);
+    last = now;
+    if (!paused) {
+      time += dt;
+      for (var i = 0; i < axos.length; i++) updateAxo(axos[i], dt);
+      for (i = 0; i < fishes.length; i++) updateFish(fishes[i], dt);
+      updateCritters(dt);
+      updateSky(dt);
+      for (i = foods.length - 1; i >= 0; i--) {
+        foods[i].life -= dt;
+        if (foods[i].life <= 0) foods.splice(i, 1);
+      }
+      for (i = ripples.length - 1; i >= 0; i--) {
+        ripples[i].t += dt * 0.9;
+        if (ripples[i].t >= 1.25) ripples.splice(i, 1);
+      }
+      draw();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function setPaused(p) {
+    paused = p;
+    pauseBtn.textContent = paused ? "Продолжить" : "Пауза";
+    pauseBtn.setAttribute("aria-pressed", paused ? "true" : "false");
+    if (paused) draw();
+  }
+
+  /* ---------- события ---------- */
+  /* ---------- украшение ---------- */
+  var decorMode = false;
+  var tool = "pad";
+  var hintTimer = 0;
+  var HINTS = {
+    feed: "Нажмите на воду, чтобы бросить корм.",
+    pad: "Нажмите на воду, чтобы посадить кувшинку.",
+    rose: "Нажмите на берег, чтобы посадить розовый куст.",
+    frog: "Нажмите на кувшинку, чтобы посадить на неё лягушку.",
+    snail: "Нажмите на кувшинку, чтобы посадить на неё улитку.",
+    remove: "Нажмите на жителя пруда или украшение, чтобы убрать."
+  };
+  function restoreHint() { hintEl.textContent = decorMode ? HINTS[tool] : HINTS.feed; }
+  function flash(msg) {
+    hintEl.textContent = msg;
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(restoreHint, 2600);
+  }
+  function setTool(t) {
+    tool = t;
+    toolBtns.forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-tool") === t ? "true" : "false"); });
+    clearTimeout(hintTimer);
+    restoreHint();
+  }
+  function setDecor(on) {
+    decorMode = on;
+    mainControls.hidden = on;
+    decorControls.hidden = !on;
+    canvas.style.cursor = on ? "copy" : "crosshair";
+    clearTimeout(hintTimer);
+    restoreHint();
+    (on ? toolBtns[0] : decorBtn).focus();
+    if (!on) saveSoon();
+  }
+
+  function padRadius(p) { return p.r * Math.min(Math.min(W, H) * 1.3, 1000); }
+
+  function handleDecor(x, y) {
+    if (tool === "pad") {
+      if (!inWater(x, y, 10)) { flash("Кувшинки растут только на воде."); return; }
+      if (pads.length >= MAX_PADS) { flash("Кувшинок уже достаточно. Уберите одну, чтобы посадить новую."); return; }
+      pads.push(makePad(x / W, y / H, rand(0.055, 0.1), rand(0, TAU)));
+      ripples.push({ x: x, y: y, t: 0, max: 40 });
+    } else if (tool === "frog" || tool === "snail") {
+      var pad = findPadAt(x, y);
+      var who = tool === "frog" ? "лягушку" : "улитку";
+      if (!pad) { flash("Посадить " + who + " можно только на кувшинку."); return; }
+      if (tool === "frog") {
+        if (pad.frog || pad.reserved) { flash("На этой кувшинке уже сидит лягушка."); return; }
+        pad.frog = makeFrog();
+      } else {
+        if (pad.snails.length >= MAX_SNAILS_PER_PAD) { flash("На этой кувшинке уже две улитки, им тесно."); return; }
+        var sn = makeSnail(Math.floor(rand(0, SNAIL_SHELLS.length)));
+        if (pad.snails.length) sn.ang = pad.snails[0].ang + Math.PI;
+        pad.snails.push(sn);
+      }
+      var pp = padPos(pad);
+      ripples.push({ x: pp.x, y: pp.y, t: 0, max: 26 });
+    } else if (tool === "rose") {
+      if (!onShore(x, y)) { flash("Розы растут только на берегу, по краю пруда."); return; }
+      if (roses.length >= MAX_ROSES) { flash("На берегу больше нет места. Уберите куст, чтобы посадить новый."); return; }
+      roses.push({ x: x / W, y: y / H, s: rand(0.5, 0.62), seed: Math.floor(rand(1, 2147483647)), c: Math.floor(rand(0, ROSE_COLORS.length)) });
+    } else {
+      var best = -1, kind = null, bd = Infinity, i, d;
+      for (i = 0; i < roses.length; i++) {
+        d = Math.hypot(roses[i].x * W - x, roses[i].y * H - y);
+        if (d < roses[i].s * shore() * 1.1 && d < bd) { bd = d; best = i; kind = "rose"; }
+      }
+      var hitPad = kind === null ? findPadAt(x, y) : null;
+      var hitFish = -1, hitAxo = -1;
+      if (kind === null && !(hitPad && (hitPad.frog || hitPad.snails.length))) {
+        // рыбки и аксолотли под пальцем (ищем ближайших)
+        bd = Infinity;
+        for (i = 0; i < fishes.length; i++) {
+          d = Math.hypot(fishes[i].x - x, fishes[i].y - y);
+          if (d < fishes[i].len * 0.6 + 10 && d < bd) { bd = d; hitFish = i; }
+        }
+        for (i = 0; i < axos.length; i++) {
+          var pts = axos[i].pts, hr = axos[i].size * 0.16 + 8;
+          for (var j = 0; j < N * 0.8; j += 2) {
+            d = Math.hypot(pts[j].x - x, pts[j].y - y);
+            if (d < hr && d < bd) { bd = d; hitAxo = i; hitFish = -1; }
+          }
+        }
+      }
+      if (kind === "rose") roses.splice(best, 1);
+      else if (hitAxo >= 0) {
+        var h0 = axos[hitAxo].pts[0];
+        ripples.push({ x: h0.x, y: h0.y, t: 0, max: 30 });
+        axos.splice(hitAxo, 1);
+        flash("Аксолотль уплыл.");
+      }
+      else if (hitFish >= 0) {
+        ripples.push({ x: fishes[hitFish].x, y: fishes[hitFish].y, t: 0, max: 24 });
+        fishes.splice(hitFish, 1);
+        flash("Рыбка уплыла.");
+      }
+      else if (hitPad) {
+        // сначала лягушка, потом улитки, потом сама кувшинка
+        if (hitPad.frog) hitPad.frog = null;
+        else if (hitPad.snails.length) hitPad.snails.pop();
+        else {
+          pads.splice(pads.indexOf(hitPad), 1);
+          jumps = jumps.filter(function (jm) {
+            if (jm.to === hitPad) { jm.from.frog = jm.from.frog || jm.frog; return false; }
+            return true;
+          });
+        }
+      }
+      else { flash("Здесь нечего убирать."); return; }
+    }
+    updateCount();
+    saveSoon();
+  }
+
+  /* ---------- сохранение ---------- */
+  var LS_KEY = "axolotl-pond-v1";
+  var lastJson = null;
+  var localSavedAt = 0;
+  var remote = null;
+  var writing = false;
+  var pendingRemote = null;
+  var saveTimer = 0;
+
+  function r4(v) { return Math.round(v * 10000) / 10000; }
+  function snapshotState() {
+    return {
+      v: 1,
+      sky: skyMode,
+      axos: axos.map(function (ax) {
+        return { vi: ax.vi, k: r4(ax.k), x: r4(ax.pts[0].x / W), y: r4(ax.pts[0].y / H), a: r4(ax.a % TAU) };
+      }),
+      fishes: fishes.map(function (f) {
+        return { vi: f.vi, len: r4(f.len), x: r4(f.x / W), y: r4(f.y / H), a: r4(f.a % TAU) };
+      }),
+      pads: pads.map(function (p) {
+        var o = { x: r4(p.x), y: r4(p.y), r: r4(p.r), rot: r4(p.rot) };
+        var hasFrog = !!p.frog || jumps.some(function (jm) { return jm.to === p; });
+        if (hasFrog) o.frog = 1;
+        if (p.snails.length) o.snails = p.snails.map(function (sn) { return sn.c; });
+        return o;
+      }),
+      roses: roses.map(function (b) { return { x: r4(b.x), y: r4(b.y), s: r4(b.s), seed: b.seed, c: b.c }; })
+    };
+  }
+
+  function inside01(v) { return clamp(num(v, 0.5), -0.1, 1.1); }
+  function applyState(st) {
+    if (!st || typeof st !== "object") return false;
+    var list = function (v) { return Array.isArray(v) ? v : []; };
+    axos = list(st.axos).slice(0, MAX_AXOS).map(function (o) {
+      return makeAxo(inside01(o.x) * W, inside01(o.y) * H, o.vi, clamp(num(o.k, 1), 0.6, 1.3), o.a);
+    });
+    fishes = list(st.fishes).slice(0, MAX_FISH).map(function (o) {
+      return makeFish(inside01(o.x) * W, inside01(o.y) * H, o.vi, o.len, o.a);
+    });
+    jumps = [];
+    pads = list(st.pads).slice(0, MAX_PADS).map(function (o) {
+      var p = makePad(inside01(o.x), inside01(o.y), clamp(num(o.r, 0.08), 0.03, 0.14), num(o.rot, 0));
+      if (o.frog) p.frog = makeFrog();
+      p.snails = list(o.snails).slice(0, MAX_SNAILS_PER_PAD).map(function (c) { return makeSnail(num(c, 0)); });
+      return p;
+    });
+    setSky(typeof st.sky === "string" ? st.sky : "auto");
+    updateSky(0, true);
+    roses = list(st.roses).slice(0, MAX_ROSES).map(function (o) {
+      return { x: inside01(o.x), y: inside01(o.y), s: clamp(num(o.s, 0.5), 0.3, 0.7), seed: Math.abs(num(o.seed, 1) | 0) || 1, c: Math.abs(num(o.c, 0) | 0) };
+    });
+    lastJson = JSON.stringify(snapshotState());
+    updateCount();
+    if (paused) draw();
+    return true;
+  }
+
+  function writeRemote(st) {
+    if (!remote) return;
+    pendingRemote = st;
+    if (writing) return;
+    writing = true;
+    (function next() {
+      var body = pendingRemote;
+      pendingRemote = null;
+      remote.set(body).then(null, function (e) {
+        var code = e && e.code;
+        if (code !== "unavailable" && code !== "resource_exhausted") remote = null;
+      }).then(function () {
+        if (pendingRemote && remote) next(); else writing = false;
+      });
+    })();
+  }
+
+  function persist(force) {
+    var st = snapshotState();
+    var json = JSON.stringify(st);
+    if (!force && json === lastJson) return;
+    lastJson = json;
+    st.savedAt = Date.now();
+    try { localStorage.setItem(LS_KEY, JSON.stringify(st)); } catch (e) { /* хранилище недоступно */ }
+    writeRemote(st);
+  }
+  function saveSoon() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () { persist(false); }, 700);
+  }
+
+  function loadLocal() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (!raw) return false;
+      var st = JSON.parse(raw);
+      if (applyState(st)) { localSavedAt = num(st.savedAt, 0); return true; }
+    } catch (e) { /* нет сохранения */ }
+    return false;
+  }
+
+  function withTimeout(p, ms) {
+    return new Promise(function (resolve, reject) {
+      var t = setTimeout(function () { reject({ code: "timeout" }); }, ms);
+      p.then(function (v) { clearTimeout(t); resolve(v); }, function (e) { clearTimeout(t); reject(e); });
+    });
+  }
+
+  function connectRemote() {
+    var c = window.claude;
+    if (!c || typeof c.use !== "function") return;
+    var db;
+    Promise.all([c.use("db"), c.use("user")]).then(function (res) {
+      db = res[0];
+      var user = res[1];
+      if (!db || !user) throw { code: "absent" };
+      return user.id();
+    }).then(function (id) {
+      if (!id) throw { code: "no-user" };
+      var ref = db.collection("data/users/" + id).doc("pond");
+      return withTimeout(ref.get(), 10000).then(function (snap) {
+        remote = ref;
+        var d = snap.exists ? snap.data() : null;
+        if (d && num(d.savedAt, 0) > localSavedAt) {
+          applyState(d);
+          try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch (e) { /* ничего */ }
+        } else {
+          persist(true);
+        }
+      });
+    }).then(null, function () { remote = null; });
+  }
+
+  /* ---------- события ---------- */
+  canvas.addEventListener("pointerdown", function (e) {
+    var rect = canvas.getBoundingClientRect();
+    var x = e.clientX - rect.left, y = e.clientY - rect.top;
+    if (decorMode) handleDecor(x, y);
+    else if (inWater(x, y)) dropFood(x, y);
+    if (paused) draw();
+  });
+  decorBtn.addEventListener("click", function () { setDecor(true); });
+  doneBtn.addEventListener("click", function () { setDecor(false); });
+  toolBtns.forEach(function (b) {
+    b.addEventListener("click", function () { setTool(b.getAttribute("data-tool")); });
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && decorMode) setDecor(false);
+  });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") persist(false);
+  });
+  window.addEventListener("pagehide", function () { persist(false); });
+  addBtn.addEventListener("click", function () { addAxo(true); saveSoon(); if (paused) draw(); });
+  fishBtn.addEventListener("click", function () { addFish(); saveSoon(); if (paused) draw(); });
+  feedBtn.addEventListener("click", function () {
+    var t = randomTarget();
+    dropFood(t.x, t.y);
+    if (paused) draw();
+  });
+  pauseBtn.addEventListener("click", function () { setPaused(!paused); });
+  skyBtn.addEventListener("click", function () {
+    setSky(skyMode === "auto" ? "day" : skyMode === "day" ? "night" : "auto");
+    if (paused) { updateSky(0, true); draw(); }
+    saveSoon();
+  });
+  // в режиме паузы и «по часам» тоже следим за временем
+  setInterval(function () { if (paused) { updateSky(0, true); draw(); } }, 60000);
+
+  window.addEventListener("resize", resize);
+  var mq = window.matchMedia("(prefers-color-scheme: dark)");
+  var onTheme = function () { readColors(); if (paused) draw(); };
+  if (mq.addEventListener) mq.addEventListener("change", onTheme);
+  new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  /* ---------- запуск ---------- */
+  readColors();
+  setSky("auto");
+  updateSky(0, true);
+  resize();
+  if (!loadLocal()) {
+    for (i = 0; i < 5; i++) addAxo(false);
+    lastJson = JSON.stringify(snapshotState());
+  }
+  updateCount();
+  connectRemote();
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    setPaused(true);
+  }
+  requestAnimationFrame(function (t) { last = t; draw(); requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>
