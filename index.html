@@ -236,6 +236,89 @@ body {
   .controls, .controls .row { gap: 0.4rem; }
   .mode-label { padding: 0.5rem 0.8rem; font-size: 0.875rem; }
 }
+
+/* ---------- музыка ---------- */
+.music {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 1rem);
+  right: 1rem;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+.vinyl-btn {
+  width: 3.25rem;
+  height: 3.25rem;
+  padding: 0.25rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(4, 30, 30, 0.22);
+  cursor: pointer;
+  position: relative;
+}
+.vinyl-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0.25rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.28), transparent 38%, transparent 62%, rgba(255, 255, 255, 0.12));
+  pointer-events: none;
+}
+.vinyl-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.vinyl {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, #111 0 6%, transparent 6.5%),
+    radial-gradient(circle at 50% 36%, #FFF4F7 0 4%, transparent 4.5%),
+    radial-gradient(circle at 50% 50%, var(--accent) 0 30%, #1a1a1e 31% 33%, transparent 34%),
+    repeating-radial-gradient(circle at 50% 50%, #1c1c21 0 1.5px, #2b2b31 1.5px 3px);
+}
+.vinyl-btn.playing .vinyl { animation: spin 3.2s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .vinyl-btn.playing .vinyl { animation-duration: 12s; } }
+.music-panel {
+  width: min(18rem, calc(100vw - 2rem));
+  padding: 0.75rem;
+  border-radius: 1.25rem;
+  background: var(--panel);
+  color: var(--panel-ink);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(4, 30, 30, 0.22);
+}
+.music-panel[hidden] { display: none; }
+.music-panel h2 { font-size: 1rem; margin: 0 0 0.5rem; }
+.track-list { display: flex; flex-direction: column; gap: 0.35rem; }
+.track-list button, .music-play {
+  font: inherit;
+  border: 0;
+  text-align: left;
+  border-radius: 0.9rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--glass-strong);
+  color: var(--panel-ink);
+  cursor: pointer;
+}
+.track-list button { display: flex; flex-direction: column; }
+.track-list button.chosen { box-shadow: inset 0 0 0 2px var(--panel-ink); }
+.track-list button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
+.track-name { font-weight: 600; font-size: 0.9375rem; }
+.track-about { font-size: 0.8125rem; opacity: 0.8; }
+.music-row { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.6rem; }
+.music-play { font-weight: 600; white-space: nowrap; }
+.music-row label { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8125rem; flex: 1; min-width: 0; }
+.music-row input { flex: 1; min-width: 0; width: 100%; accent-color: var(--accent-ink); }
+.music-note { margin: 0.5rem 0 0; font-size: 0.75rem; opacity: 0.75; }
+.track-list button:focus-visible, .music-play:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.intro { padding-right: 5rem; }
 </style>
 </head>
 <body>
@@ -250,6 +333,19 @@ body {
     <button id="go-home" type="button">Мой пруд</button>
   </div>
 </header>
+
+<div class="music">
+  <button class="vinyl-btn" id="music-btn" type="button" aria-expanded="false" aria-controls="music-panel" aria-label="Музыка"><span class="vinyl" aria-hidden="true"></span></button>
+  <div class="music-panel" id="music-panel" role="group" aria-label="Музыка" hidden>
+    <h2>Музыка пруда</h2>
+    <div class="track-list" id="track-list"></div>
+    <div class="music-row">
+      <button class="music-play" id="music-play" type="button">▶ Играть</button>
+      <label>Громкость <input id="music-vol" type="range" min="0" max="100" value="60"></label>
+    </div>
+    <p class="music-note">Если на iPhone тихо, выключите беззвучный режим.</p>
+  </div>
+</div>
 
 <div class="controls" id="main-controls">
   <div class="menu" id="add-menu" role="group" aria-label="Кого добавить" hidden>
@@ -2137,6 +2233,7 @@ body {
   canvas.addEventListener("pointerdown", function (e) {
     var rect = canvas.getBoundingClientRect();
     var x = e.clientX - rect.left, y = e.clientY - rect.top;
+    if (!musicPanel.hidden) { setMusicPanel(false); return; }
     if (!addMenu.hidden || !decorMenu.hidden) { closeMenus(); return; }
     if (decorMode) handleDecor(x, y);
     else if (inWater(x, y)) dropFood(x, y);
@@ -2162,6 +2259,7 @@ body {
   });
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
+    if (!musicPanel.hidden) { setMusicPanel(false); musicBtn.focus(); return; }
     if (!addMenu.hidden) { closeMenus(); addBtn.focus(); }
     else if (!decorMenu.hidden) { closeMenus(); decorBtn.focus(); }
     else if (decorMode) exitMode();
@@ -2192,6 +2290,318 @@ body {
   });
   // в режиме паузы и «по часам» тоже следим за временем
   setInterval(function () { if (paused) { updateSky(0, true); draw(); } }, 60000);
+
+  /* ---------- музыка: треки сочиняются прямо в браузере ---------- */
+  var Music = (function () {
+    var ac = null, master = null, verb = null, noiseBuf = null;
+    var track = null, trackBus = null, trackSend = null, nodes = [], timer = 0, nextTime = 0, step = 0, mel = 0;
+    var volume = 0.6, playing = false, current = 0;
+
+    function mtof(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+    function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+
+    function ensure() {
+      if (ac) return ac;
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ac = new AC();
+      master = ac.createGain();
+      master.gain.value = volume * volume * 2.2;
+      var comp = ac.createDynamicsCompressor();
+      comp.threshold.value = -16; comp.ratio.value = 3;
+      master.connect(comp); comp.connect(ac.destination);
+      // мягкая «комната»: свёртка с затухающим шумом
+      var len = Math.floor(ac.sampleRate * 3.2), ir = ac.createBuffer(2, len, ac.sampleRate);
+      for (var ch = 0; ch < 2; ch++) {
+        var d = ir.getChannelData(ch);
+        for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6);
+      }
+      verb = ac.createConvolver(); verb.buffer = ir;
+      var wet = ac.createGain(); wet.gain.value = 0.5;
+      verb.connect(wet); wet.connect(master);
+      noiseBuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+      var nd = noiseBuf.getChannelData(0);
+      for (i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+      return ac;
+    }
+
+    // шина инструмента: сухой сигнал + немного в реверберацию
+    function bus(level, wetLevel) {
+      var g = ac.createGain(); g.gain.value = level;
+      g.connect(trackBus);
+      var s = ac.createGain(); s.gain.value = wetLevel;
+      g.connect(s); s.connect(trackSend);
+      nodes.push(g, s);
+      return g;
+    }
+    function env(g, t, a, peak, rel) {
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(peak, t + a);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + a + rel);
+    }
+    function osc(type, f, t, stop, dest, detune) {
+      var o = ac.createOscillator();
+      o.type = type; o.frequency.setValueAtTime(f, t);
+      if (detune) o.detune.value = detune;
+      o.connect(dest); o.start(t); o.stop(stop);
+      return o;
+    }
+
+    // калимба: мягкий тон и короткий «звон» язычка
+    function pluck(b, m, t, len, level) {
+      var f = mtof(m), g = ac.createGain();
+      g.connect(b); env(g, t, 0.006, level || 0.3, len || 1.6);
+      osc("sine", f, t, t + (len || 1.6) + 0.1, g);
+      var g2 = ac.createGain(); g2.connect(b); env(g2, t, 0.003, (level || 0.3) * 0.25, 0.15);
+      osc("sine", f * 4.02, t, t + 0.3, g2);
+    }
+    // музыкальная шкатулка
+    function bell(b, m, t, level) {
+      var f = mtof(m);
+      [[1, 1, 2.6], [2.0, 0.35, 1.2], [3.01, 0.15, 0.6]].forEach(function (h) {
+        var g = ac.createGain(); g.connect(b); env(g, t, 0.004, (level || 0.22) * h[1], h[2]);
+        osc("sine", f * h[0], t, t + h[2] + 0.1, g);
+      });
+    }
+    // тёплый пэд: две расстроенные «пилы» через фильтр
+    function pad(b, notes, t, dur, level) {
+      var lp = ac.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 900; lp.Q.value = 0.3;
+      var g = ac.createGain(); lp.connect(g); g.connect(b);
+      var pk = (level || 0.12) / Math.sqrt(notes.length);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(pk, t + 1.6);
+      g.gain.setValueAtTime(pk, t + dur);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 2.6);
+      notes.forEach(function (m) {
+        osc("triangle", mtof(m), t, t + dur + 2.8, lp, -7);
+        osc("triangle", mtof(m), t, t + dur + 2.8, lp, 7);
+      });
+    }
+    function bass(b, m, t, dur, level) {
+      var g = ac.createGain(); g.connect(b);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(level || 0.25, t + 0.08);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc("sine", mtof(m), t, t + dur + 0.1, g);
+    }
+    // флейта: синус с вибрато и мягкой атакой
+    function flute(b, m, t, dur, level) {
+      var g = ac.createGain(); g.connect(b);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(level || 0.16, t + 0.25);
+      g.gain.setValueAtTime(level || 0.16, t + dur);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.6);
+      var o = osc("sine", mtof(m), t, t + dur + 0.7, g);
+      var lfo = ac.createOscillator(), lg = ac.createGain();
+      lfo.frequency.value = 5; lg.gain.value = 6;
+      lfo.connect(lg); lg.connect(o.detune); lfo.start(t + 0.3); lfo.stop(t + dur + 0.7);
+    }
+    // капля: короткий «плюх» с падающим тоном
+    function drop(b, t, level) {
+      var g = ac.createGain(); g.connect(b); env(g, t, 0.003, level || 0.18, 0.12);
+      var o = osc("sine", 900 + Math.random() * 900, t, t + 0.2, g);
+      o.frequency.exponentialRampToValueAtTime(320, t + 0.12);
+    }
+    // сверчок: три быстрых стрекотания
+    function cricket(b, t) {
+      var f = 4200 + Math.random() * 500;
+      for (var i = 0; i < 3; i++) {
+        var g = ac.createGain(); g.connect(b); env(g, t + i * 0.06, 0.004, 0.05, 0.03);
+        osc("sine", f, t + i * 0.06, t + i * 0.06 + 0.06, g);
+      }
+    }
+    // фоновые шумы: ручей, дождь, ветер
+    function noise(kind) {
+      var src = ac.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
+      var f = ac.createBiquadFilter(), g = ac.createGain();
+      if (kind === "stream") { f.type = "bandpass"; f.frequency.value = 1400; f.Q.value = 1.2; g.gain.value = 0.035; }
+      if (kind === "rain") { f.type = "highpass"; f.frequency.value = 700; g.gain.value = 0.06; }
+      if (kind === "wind") {
+        f.type = "bandpass"; f.frequency.value = 450; f.Q.value = 0.8; g.gain.value = 0.05;
+        var l = ac.createOscillator(), lg = ac.createGain();
+        l.frequency.value = 0.07; lg.gain.value = 260; l.connect(lg); lg.connect(f.frequency); l.start();
+        var l2 = ac.createOscillator(), lg2 = ac.createGain();
+        l2.frequency.value = 0.05; lg2.gain.value = 0.03; l2.connect(lg2); lg2.connect(g.gain); l2.start();
+        nodes.push(l, l2);
+      }
+      src.connect(f); f.connect(g); g.connect(trackBus);
+      var s = ac.createGain(); s.gain.value = 0.2; g.connect(s); s.connect(trackSend);
+      src.start();
+      nodes.push(src, f, g, s);
+    }
+
+    // мелодия бродит по гамме маленькими шагами
+    function walk(scale) {
+      mel = clamp(mel + pick([-2, -1, -1, 0, 1, 1, 2]), 0, scale.length - 1);
+      return scale[mel];
+    }
+
+    var TRACKS = [
+      {
+        name: "Утро у пруда", about: "калимба и ручеёк", bpm: 76, bar: 8, chordBars: 2,
+        chords: [[48, 55, 59, 64], [45, 52, 55, 60], [41, 48, 52, 57], [43, 50, 55, 59]],
+        scale: [67, 69, 72, 74, 76, 79, 81, 84, 86],
+        start: function () { this.b = { k: bus(1, 0.35), p: bus(1, 0.6), d: bus(1, 0.5) }; noise("stream"); },
+        step: function (t, s, ch, beat) {
+          if (s % (this.bar * this.chordBars) === 0) pad(this.b.p, ch.slice(1).map(function (m) { return m + 12; }), t, beat * 16 - 1, 0.1);
+          if (s % this.bar === 0) bass(this.b.p, ch[0], t, beat * 7, 0.22);
+          if (Math.random() < (s % 2 ? 0.35 : 0.6)) pluck(this.b.k, walk(this.scale), t, 1.6, 0.26);
+          if (Math.random() < 0.05) drop(this.b.d, t + Math.random() * beat, 0.12);
+        }
+      },
+      {
+        name: "Тёплый дождь", about: "капли и мягкие аккорды", bpm: 62, bar: 8, chordBars: 2,
+        chords: [[45, 52, 55, 59], [41, 48, 52, 57], [48, 55, 60, 64], [43, 50, 55, 62]],
+        scale: [64, 67, 69, 72, 74, 76, 79, 81],
+        start: function () { this.b = { k: bus(1, 0.55), p: bus(1, 0.7), d: bus(1, 0.4) }; noise("rain"); },
+        step: function (t, s, ch, beat) {
+          if (s % (this.bar * this.chordBars) === 0) pad(this.b.p, ch.map(function (m) { return m + 12; }), t, beat * 16 - 1, 0.12);
+          if (s % this.bar === 0) bass(this.b.p, ch[0] - 12, t, beat * 8, 0.2);
+          if (s % 2 === 0 && Math.random() < 0.4) pluck(this.b.k, walk(this.scale), t, 2.4, 0.2);
+          for (var i = 0; i < 2; i++) if (Math.random() < 0.3) drop(this.b.d, t + Math.random() * beat, 0.08 + Math.random() * 0.08);
+        }
+      },
+      {
+        name: "Ночная колыбельная", about: "шкатулка и сверчки", bpm: 58, bar: 6, chordBars: 1,
+        chords: [[50, 57, 62, 66], [47, 54, 59, 62], [43, 50, 55, 59], [45, 52, 57, 61]],
+        scale: [74, 76, 78, 81, 83, 86],
+        start: function () { this.b = { k: bus(1, 0.6), p: bus(1, 0.7), c: bus(0.7, 0.5) }; },
+        step: function (t, s, ch, beat) {
+          var pos = s % this.bar;
+          if (pos === 0) { pad(this.b.p, [ch[1] + 12, ch[2] + 12], t, beat * 6 - 0.5, 0.08); bass(this.b.p, ch[0], t, beat * 5, 0.16); }
+          var arp = [ch[1] + 24, ch[2] + 24, ch[3] + 24, ch[2] + 24, ch[3] + 24, ch[1] + 36];
+          if (pos < 6 && Math.random() < (pos === 0 ? 1 : 0.7)) bell(this.b.k, arp[pos], t, 0.16);
+          if (Math.random() < 0.08) cricket(this.b.c, t + Math.random() * beat);
+        }
+      },
+      {
+        name: "Ветерок", about: "флейта и ветер в камышах", bpm: 66, bar: 8, chordBars: 2,
+        chords: [[40, 47, 50, 55], [45, 52, 57, 61], [38, 45, 50, 54], [40, 47, 52, 55]],
+        scale: [64, 66, 67, 69, 71, 73, 74, 76, 78],
+        start: function () { this.b = { f: bus(1, 0.6), p: bus(1, 0.6), k: bus(1, 0.4) }; noise("wind"); },
+        step: function (t, s, ch, beat) {
+          if (s % (this.bar * this.chordBars) === 0) pad(this.b.p, ch.slice(1).map(function (m) { return m + 12; }), t, beat * 16 - 1, 0.1);
+          if (s % this.bar === 0) bass(this.b.p, ch[0], t, beat * 7, 0.2);
+          if (s % 4 === 0 && Math.random() < 0.55) flute(this.b.f, walk(this.scale), t, beat * (Math.random() < 0.5 ? 1.5 : 3), 0.13);
+          if (s % 2 === 1 && Math.random() < 0.15) pluck(this.b.k, walk(this.scale) + 12, t, 1.2, 0.12);
+        }
+      }
+    ];
+
+    function tick() {
+      if (!track) return;
+      var beat = 60 / track.bpm, eighth = beat / 2;
+      while (nextTime < ac.currentTime + 1.2) {
+        var bars = Math.floor(step / track.bar);
+        var ch = track.chords[Math.floor(bars / track.chordBars) % track.chords.length];
+        try { track.step(nextTime, step, ch, eighth); } catch (e) { /* пропускаем ноту */ }
+        nextTime += eighth;
+        step++;
+      }
+    }
+    function stopTrack() {
+      clearInterval(timer);
+      if (trackBus) {
+        var old = trackBus, oldSend = trackSend, oldNodes = nodes, now = ac.currentTime;
+        old.gain.setTargetAtTime(0.0001, now, 0.4);
+        oldSend.gain.setTargetAtTime(0.0001, now, 0.4);
+        setTimeout(function () {
+          oldNodes.forEach(function (n) { try { if (n.stop) n.stop(); } catch (e) { /* уже остановлен */ } try { n.disconnect(); } catch (e) { /* ничего */ } });
+          try { old.disconnect(); oldSend.disconnect(); } catch (e) { /* ничего */ }
+        }, 2500);
+      }
+      trackBus = null; trackSend = null; nodes = []; track = null;
+    }
+    function startTrack(i) {
+      if (!ensure()) return false;
+      if (ac.state === "suspended") ac.resume();
+      stopTrack();
+      current = i;
+      track = Object.create(TRACKS[i]);
+      trackBus = ac.createGain();
+      trackBus.gain.setValueAtTime(0.0001, ac.currentTime);
+      trackBus.gain.exponentialRampToValueAtTime(1, ac.currentTime + 1.5);
+      trackBus.connect(master);
+      trackSend = ac.createGain();
+      trackSend.gain.setValueAtTime(0.0001, ac.currentTime);
+      trackSend.gain.exponentialRampToValueAtTime(1, ac.currentTime + 1.5);
+      trackSend.connect(verb);
+      mel = Math.floor(track.scale.length / 2);
+      step = 0; nextTime = ac.currentTime + 0.1;
+      track.start();
+      tick();
+      timer = setInterval(tick, 150);
+      playing = true;
+      return true;
+    }
+    return {
+      tracks: TRACKS,
+      play: function (i) { return startTrack(typeof i === "number" ? i : current); },
+      pause: function () { if (ac) stopTrack(); playing = false; },
+      isPlaying: function () { return playing; },
+      current: function () { return current; },
+      select: function (i) { current = i; },
+      setVolume: function (v) {
+        volume = v;
+        if (master) master.gain.setTargetAtTime(v * v * 2.2, ac.currentTime, 0.1);
+      }
+    };
+  })();
+
+  var musicBtn = document.getElementById("music-btn");
+  var musicPanel = document.getElementById("music-panel");
+  var musicPlay = document.getElementById("music-play");
+  var musicVol = document.getElementById("music-vol");
+  var trackList = document.getElementById("track-list");
+  var MUSIC_KEY = "zen-pond-music";
+
+  Music.tracks.forEach(function (tr, i) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("data-track", i);
+    b.setAttribute("aria-pressed", "false");
+    b.innerHTML = "<span class=\"track-name\"></span><span class=\"track-about\"></span>";
+    b.querySelector(".track-name").textContent = tr.name;
+    b.querySelector(".track-about").textContent = tr.about;
+    b.addEventListener("click", function () {
+      if (Music.isPlaying() && Music.current() === i) { Music.pause(); } else { Music.play(i); }
+      syncMusic();
+    });
+    trackList.appendChild(b);
+  });
+
+  function syncMusic() {
+    var on = Music.isPlaying(), cur = Music.current();
+    musicBtn.classList.toggle("playing", on);
+    musicBtn.setAttribute("aria-label", on ? "Музыка: играет «" + Music.tracks[cur].name + "»" : "Музыка");
+    musicPlay.textContent = on ? "⏸ Пауза" : "▶ Играть";
+    Array.prototype.forEach.call(trackList.children, function (b, i) {
+      b.setAttribute("aria-pressed", on && i === cur ? "true" : "false");
+      b.classList.toggle("chosen", i === cur);
+    });
+    try { localStorage.setItem(MUSIC_KEY, JSON.stringify({ t: cur, v: Number(musicVol.value) })); } catch (e) { /* ничего */ }
+  }
+  function setMusicPanel(open) {
+    musicPanel.hidden = !open;
+    musicBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) closeMenus();
+  }
+  musicBtn.addEventListener("click", function () { setMusicPanel(musicPanel.hidden); });
+  musicPlay.addEventListener("click", function () {
+    if (Music.isPlaying()) Music.pause(); else Music.play();
+    syncMusic();
+  });
+  musicVol.addEventListener("input", function () { Music.setVolume(Number(musicVol.value) / 100); syncMusic(); });
+  (function restoreMusic() {
+    try {
+      var m = JSON.parse(localStorage.getItem(MUSIC_KEY) || "null");
+      if (m) {
+        if (typeof m.t === "number" && Music.tracks[m.t]) Music.select(m.t);
+        if (typeof m.v === "number") { musicVol.value = clamp(m.v, 0, 100); Music.setVolume(musicVol.value / 100); }
+      }
+    } catch (e) { /* ничего */ }
+    syncMusic();
+  })();
 
   /* ---------- ссылка на свой пруд ---------- */
   var guestEl = document.getElementById("guest");
