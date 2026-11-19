@@ -1992,8 +1992,8 @@ body {
     var cw = causticCanvas.width, ch = causticCanvas.height;
     cctx.clearRect(0, 0, cw, ch);
     var layers = [
-      { k: 1.8, vx: 7, vy: 4, a: 0.08 },
-      { k: 2.6, vx: -5, vy: 6, a: 0.05 }
+      { k: 1.8, vx: 7, vy: 4, a: 0.045 },
+      { k: 2.6, vx: -5, vy: 6, a: 0.025 }
     ];
     for (var i = 0; i < layers.length; i++) {
       var L = layers[i], span = CAUSTIC_SIZE * L.k;
